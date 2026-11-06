@@ -1,0 +1,555 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Zhang Leyin is a game designer and real-time storyteller creating expressive worlds in Unreal Engine 5.">
+  <meta name="theme-color" content="#000000">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:title" content="Zhang Leyin - Emotion Trigger">
+  <meta property="og:description" content="Game design, level design and real-time narrative work in Unreal Engine 5.">
+  <meta property="og:type" content="website">
+  <title>Zhang Leyin - Emotion Trigger</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="editor.css">
+  <script>document.documentElement.classList.add('js');</script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <div class="page-noise" aria-hidden="true"></div>
+  <div class="scroll-readout" aria-hidden="true">
+    <span id="scroll-percent">000</span>
+    <i></i>
+  </div>
+
+  <header class="site-header" id="site-header">
+    <a class="brand-square" href="#top" aria-label="Zhang Leyin, back to top">
+      <span>ZL</span>
+      <i aria-hidden="true"></i>
+    </a>
+
+    <a class="brand-word" href="#top">Zhang Leyin</a>
+
+    <nav class="desktop-nav" aria-label="Primary navigation">
+      <a href="#work">Work</a>
+      <a href="#about">About</a>
+      <a href="#illustrations">Illustrations</a>
+      <a href="#contact">Contact</a>
+    </nav>
+
+    <span class="header-meta">BNBU / 2026</span>
+
+    <a class="header-cta" href="assets/NTU-Portfolio.pdf" download>
+      <span>Portfolio PDF</span>
+      <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+    </a>
+
+    <button class="menu-toggle" type="button" aria-controls="mobile-menu" aria-expanded="false">
+      <span class="sr-only">Open navigation</span>
+      <span></span>
+      <span></span>
+    </button>
+  </header>
+
+  <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation" aria-hidden="true">
+    <div class="mobile-menu-top">
+      <span>Navigation / 01-04</span>
+      <span>Portfolio 2026</span>
+    </div>
+    <a href="#work"><span>01</span>Work</a>
+    <a href="#about"><span>02</span>About</a>
+    <a href="#illustrations"><span>03</span>Illustrations</a>
+    <a href="#contact"><span>04</span>Contact</a>
+    <div class="mobile-menu-meta">
+      <span>BNBU / Game Design</span>
+      <span>Emotion Trigger</span>
+    </div>
+  </nav>
+
+  <main id="main">
+    <section class="hero" id="top" aria-labelledby="hero-title">
+      <div class="hero-art">
+        <img src="assets/hero-emotion-trigger.png" alt="">
+        <div class="hero-art-top">
+          <span>EMOTION TRIGGER / PORTFOLIO TRANSMISSION</span>
+          <span>REC 24FPS / 2026</span>
+        </div>
+        <div class="hero-art-bottom">
+          <span>SCENE 001</span>
+          <span>BNBU // GAME DESIGN</span>
+        </div>
+        <div class="hero-title-wrap">
+          <p class="micro-label">A portfolio by Zhang Leyin</p>
+          <h1 id="hero-title">
+            <span class="hero-word-main">Emotional</span>
+            <span class="hero-word-secondary">Trigger</span>
+          </h1>
+        </div>
+        <div class="hero-reticle" aria-hidden="true">
+          <span></span>
+        </div>
+        <a class="hero-video-link" href="https://www.bilibili.com/video/BV1qS4b61EEk/?spm_id_from=333.1387.homepage.video_card.click&amp;vd_source=306e2619059f643453ebc7e89d26d4e2" target="_blank" rel="noreferrer">
+          <span>
+            click to watch the video portfolio
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11"/></svg>
+          </span>
+        </a>
+      </div>
+
+      <aside class="hero-panel" aria-label="Portfolio introduction">
+        <div class="hero-panel-top">
+          <span class="status-badge"><i></i><span>Selected portfolio</span></span>
+          <span>01 / 04</span>
+        </div>
+
+        <div class="hero-panel-copy">
+          <p class="panel-kicker">Game designer / Level designer / Real-time storyteller</p>
+          <p class="hero-statement">
+            I build expressive worlds in Unreal Engine 5 where mechanics, image and sound
+            connect people through a shared feeling.
+          </p>
+        </div>
+
+        <div class="hero-panel-actions">
+          <a class="button button-dark" href="#work">
+            <span>Explore selected work</span>
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 12h16M13 5l7 7-7 7"/></svg>
+          </a>
+        </div>
+
+        <dl class="hero-data">
+          <div><dt>Projects</dt><dd>04</dd></div>
+          <div><dt>Illustrations</dt><dd>06</dd></div>
+          <div><dt>Engine</dt><dd>UE5</dd></div>
+        </dl>
+      </aside>
+    </section>
+
+    <div class="ticker" aria-hidden="true">
+      <div class="ticker-track">
+        <span>Emotion is the mechanic</span><i></i>
+        <span>Four playable worlds</span><i></i>
+        <span>One point of view</span><i></i>
+        <span>Unreal Engine 5</span><i></i>
+        <span>Emotion is the mechanic</span><i></i>
+        <span>Four playable worlds</span><i></i>
+        <span>One point of view</span><i></i>
+        <span>Unreal Engine 5</span><i></i>
+      </div>
+    </div>
+
+    <section class="work-section" id="work" aria-labelledby="work-title">
+      <div class="section-shell">
+        <div class="section-rail" data-reveal>
+          <span>SEC. 01</span>
+          <span>SELECTED WORK</span>
+          <span>N = 04</span>
+        </div>
+
+        <div class="section-main">
+          <header class="section-heading" data-reveal>
+            <p class="section-code">MISSION INDEX // 01-04</p>
+            <h2 id="work-title">Worlds built to leave a mark.</h2>
+            <p class="section-lead">
+              Four solo projects spanning cinematic storytelling, puzzle design and playable
+              level architecture. Each entry opens a complete design case study.
+            </p>
+          </header>
+
+          <div class="project-grid">
+            <article class="project-card" data-reveal>
+              <a href="#project-uncivilized" data-project="uncivilized" aria-label="Open the Uncivilized case study">
+                <div class="project-media">
+                  <img src="assets/uncivilized-cover.jpg" alt="Cinematic key visual from Uncivilized">
+                  <span class="project-index">01</span>
+                  <span class="project-type">Real-time short</span>
+                  <span class="project-open">
+                    <span>Open case study</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11"/></svg>
+                  </span>
+                </div>
+                <div class="project-summary">
+                  <div class="project-kicker">
+                    <span>02 min</span>
+                    <span>Unreal Engine 5</span>
+                    <span>Solo</span>
+                  </div>
+                  <h3>Uncivilized</h3>
+                  <p>A dialogue-free sci-fi assassination where blue order collapses into a red illusion.</p>
+                  <span class="project-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 12h16M13 5l7 7-7 7"/></svg>
+                  </span>
+                </div>
+              </a>
+            </article>
+
+            <article class="project-card" data-reveal>
+              <a href="#project-playtime" data-project="playtime" aria-label="Open the Play Time case study">
+                <div class="project-media">
+                  <img src="assets/playtime-cover.jpg" alt="Moody red interior from the Play Time level">
+                  <span class="project-index">02</span>
+                  <span class="project-type">Puzzle level</span>
+                  <span class="project-open">
+                    <span>Open case study</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11"/></svg>
+                  </span>
+                </div>
+                <div class="project-summary">
+                  <div class="project-kicker">
+                    <span>08 min</span>
+                    <span>Unreal Engine 5</span>
+                    <span>Solo</span>
+                  </div>
+                  <h3>Play Time</h3>
+                  <p>Objects, ambient sound and spatial memory drive a level with no dialogue.</p>
+                  <span class="project-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 12h16M13 5l7 7-7 7"/></svg>
+                  </span>
+                </div>
+              </a>
+            </article>
+
+            <article class="project-card" data-reveal>
+              <a href="#project-showman" data-project="showman" aria-label="Open the Death of the Showman case study">
+                <div class="project-media">
+                  <img src="assets/showman-cover.png" alt="Atmospheric key visual from Death of the Showman">
+                  <span class="project-index">03</span>
+                  <span class="project-type">Adventure level</span>
+                  <span class="project-open">
+                    <span>Open case study</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11"/></svg>
+                  </span>
+                </div>
+                <div class="project-summary">
+                  <div class="project-kicker">
+                    <span>10 min</span>
+                    <span>Unreal Engine 5</span>
+                    <span>Solo</span>
+                  </div>
+                  <h3>Death of the Showman</h3>
+                  <p>A ruined carnival becomes a readable, escalating route from graveyard to Ferris wheel.</p>
+                  <span class="project-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 12h16M13 5l7 7-7 7"/></svg>
+                  </span>
+                </div>
+              </a>
+            </article>
+
+            <article class="project-card" data-reveal>
+              <a href="#project-diehard" data-project="diehard" aria-label="Open the Die Hard case study">
+                <div class="project-media">
+                  <img src="assets/diehard-cover.png" alt="Brutalist sci-fi tower from the Die Hard project">
+                  <span class="project-index">04</span>
+                  <span class="project-type">Dual-level shooter</span>
+                  <span class="project-open">
+                    <span>Open case study</span>
+                    <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11"/></svg>
+                  </span>
+                </div>
+                <div class="project-summary">
+                  <div class="project-kicker">
+                    <span>10 min</span>
+                    <span>Unreal Engine 5</span>
+                    <span>Solo</span>
+                  </div>
+                  <h3>Die Hard</h3>
+                  <p>Two levels move through one brutalist tower in opposite directions, ending at the boss.</p>
+                  <span class="project-arrow" aria-hidden="true">
+                    <svg viewBox="0 0 24 24"><path d="M4 12h16M13 5l7 7-7 7"/></svg>
+                  </span>
+                </div>
+              </a>
+            </article>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="writers-section" id="writers-block" aria-labelledby="writers-block-title">
+      <div class="section-shell">
+        <div class="section-rail" data-reveal>
+          <span>NEXT</span>
+          <span>INDEPENDENT GAME</span>
+          <span>IN DEVELOPMENT</span>
+        </div>
+
+        <div class="section-main">
+          <div class="writers-layout">
+            <figure class="writers-visual" data-reveal>
+              <img src="assets/writers-block-key-v2.webp" alt="Atmospheric environment study for Writer's Block">
+              <span class="writers-status">In development</span>
+              <figcaption>
+                <span>Writer's Block / 写作障碍</span>
+                <span>Next independent game</span>
+              </figcaption>
+            </figure>
+
+            <div class="writers-copy" data-reveal>
+              <p class="section-code">NEXT PROJECT // WRITER'S BLOCK</p>
+              <h2 id="writers-block-title">Writer's Block</h2>
+              <p class="writers-language">写作障碍</p>
+              <p class="writers-deck">A narrator tells you what to do. You decide whether to obey.</p>
+              <div class="writers-details">
+                <p>
+                  The next independent game grows out of Play Time and draws inspiration from
+                  The Stanley Parable. Its narrator guides the player through a world where
+                  following instructions is always a choice.
+                </p>
+                <p>
+                  Beyond the portfolio level, the project adds a complete narrative and stronger
+                  connections between levels, with a tone made for players who value distinctive
+                  independent games.
+                </p>
+              </div>
+              <a class="writers-link button" href="https://www.bilibili.com/video/BV1dwpu6GE5G/?spm_id_from=333.1387.homepage.video_card.click&amp;vd_source=306e2619059f643453ebc7e89d26d4e2" target="_blank" rel="noreferrer">
+                <span>Watch the trailer</span>
+                <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11"/></svg>
+              </a>
+            </div>
+          </div>
+
+          <div class="writers-screens-heading" data-reveal>
+            <p class="section-code">GAME SCREENS // 06</p>
+            <p class="writers-screens-note">Gameplay frames from the next independent game.</p>
+          </div>
+
+          <div class="writers-screens-grid">
+            <figure class="writers-screenshot" data-reveal>
+              <img src="assets/writers-block-screen-01.jpg" alt="Writer's Block game screenshot slot 1" loading="lazy">
+              <span class="writers-frame-index">01</span>
+            </figure>
+            <figure class="writers-screenshot" data-reveal>
+              <img src="assets/writers-block-screen-02.jpg" alt="Writer's Block game screenshot slot 2" loading="lazy">
+              <span class="writers-frame-index">02</span>
+            </figure>
+            <figure class="writers-screenshot" data-reveal>
+              <img src="assets/writers-block-screen-03.jpg" alt="Writer's Block game screenshot slot 3" loading="lazy">
+              <span class="writers-frame-index">03</span>
+            </figure>
+            <figure class="writers-screenshot" data-reveal>
+              <img src="assets/writers-block-screen-04.jpg" alt="Writer's Block game screenshot slot 4" loading="lazy">
+              <span class="writers-frame-index">04</span>
+            </figure>
+            <figure class="writers-screenshot" data-reveal>
+              <img src="assets/writers-block-screen-05.jpg" alt="Writer's Block game screenshot slot 5" loading="lazy">
+              <span class="writers-frame-index">05</span>
+            </figure>
+            <figure class="writers-screenshot" data-reveal>
+              <img src="assets/writers-block-screen-06.jpg" alt="Writer's Block game screenshot slot 6" loading="lazy">
+              <span class="writers-frame-index">06</span>
+            </figure>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="about-section" id="about" aria-labelledby="about-title">
+      <div class="section-shell">
+        <div class="section-rail" data-reveal>
+          <span>SEC. 02</span>
+          <span>PROFILE</span>
+          <span>ID / ZL</span>
+        </div>
+
+        <div class="section-main about-grid">
+          <figure class="portrait-frame" data-reveal>
+            <div class="frame-label">
+              <span>IDENTITY // ZHANG LEYIN</span>
+              <span>FRAME 001</span>
+            </div>
+            <div class="portrait-image">
+              <img src="assets/portrait.png" alt="Portrait artwork from Zhang Leyin's portfolio">
+              <span class="portrait-target" aria-hidden="true"></span>
+            </div>
+            <figcaption>
+              <span>Designer / Storyteller</span>
+              <span>BNBU / 2026</span>
+            </figcaption>
+          </figure>
+
+          <div class="about-copy" data-reveal>
+            <p class="section-code">PROFILE DATA // ABOUT ME</p>
+            <h2 id="about-title">I make games because they can make us feel something once in a lifetime.</h2>
+            <div class="about-body">
+              <p>
+                My name is Zhang Leyin. I am a game designer and level designer working across
+                real-time narrative, environmental storytelling and playable systems.
+              </p>
+              <p>
+                From the sinking sunset on another planet to a friendship built across an
+                adventure, games can turn image, sound and interaction into shared emotion. That
+                is the reason I keep making them.
+              </p>
+              <p class="about-closing">
+                It helps find your people. It is magic. It is emotional trigger.
+              </p>
+            </div>
+
+            <dl class="about-facts">
+              <div>
+                <dt>Focus</dt>
+                <dd>Game and level design</dd>
+              </div>
+              <div>
+                <dt>Toolkit</dt>
+                <dd>UE5 / Blueprints / Level Sequence</dd>
+              </div>
+              <div>
+                <dt>Education</dt>
+                <dd>Beijing Normal-Hong Kong Baptist University - BNBU</dd>
+              </div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="illustrations-section" id="illustrations" aria-labelledby="illustrations-title">
+      <div class="section-shell">
+        <div class="section-rail" data-reveal>
+          <span>SEC. 03</span>
+          <span>VISUAL ARCHIVE</span>
+          <span>N = 06</span>
+        </div>
+
+        <div class="section-main">
+          <header class="section-heading illustration-heading" data-reveal>
+            <p class="section-code">CHARACTER STUDY // SKETCHBOOK</p>
+            <h2 id="illustrations-title">Character studies, visual experiments, fan art.</h2>
+            <p class="section-lead">A separate sketchbook inside the same world-building practice.</p>
+          </header>
+
+          <div class="illustration-grid">
+            <button class="illustration-card" type="button" data-src="assets/illustration-dorohedoro-01.png" data-caption="Fan art for Dorohedoro" data-reveal>
+              <span class="illustration-image"><img src="assets/illustration-dorohedoro-01.png" alt="Dorohedoro fan art in green and black"></span>
+              <span class="illustration-overlay" aria-hidden="true"><i>+</i>View full image</span>
+              <span class="illustration-meta"><span>FAN ART / 01</span><span>DOROHEDORO</span></span>
+            </button>
+            <button class="illustration-card" type="button" data-src="assets/illustration-dorohedoro-02.png" data-caption="Fan art for Dorohedoro" data-reveal>
+              <span class="illustration-image"><img src="assets/illustration-dorohedoro-02.png" alt="Dorohedoro fan art in red and black"></span>
+              <span class="illustration-overlay" aria-hidden="true"><i>+</i>View full image</span>
+              <span class="illustration-meta"><span>FAN ART / 02</span><span>DOROHEDORO</span></span>
+            </button>
+            <button class="illustration-card" type="button" data-src="assets/illustration-elle.png" data-caption="Sci-fi character design: Elle" data-reveal>
+              <span class="illustration-image"><img src="assets/illustration-elle.png" alt="Sci-fi character design named Elle"></span>
+              <span class="illustration-overlay" aria-hidden="true"><i>+</i>View full image</span>
+              <span class="illustration-meta"><span>ORIGINAL / 03</span><span>ELLE</span></span>
+            </button>
+            <button class="illustration-card" type="button" data-src="assets/illustration-cabbie.png" data-caption="Sci-fi character design: Cabbie" data-reveal>
+              <span class="illustration-image"><img src="assets/illustration-cabbie.png" alt="Sci-fi character design named Cabbie"></span>
+              <span class="illustration-overlay" aria-hidden="true"><i>+</i>View full image</span>
+              <span class="illustration-meta"><span>ORIGINAL / 04</span><span>CABBIE</span></span>
+            </button>
+            <button class="illustration-card" type="button" data-src="assets/illustration-kit.png" data-caption="Sci-fi character design: Kit" data-reveal>
+              <span class="illustration-image"><img src="assets/illustration-kit.png" alt="Sci-fi character design named Kit"></span>
+              <span class="illustration-overlay" aria-hidden="true"><i>+</i>View full image</span>
+              <span class="illustration-meta"><span>ORIGINAL / 05</span><span>KIT</span></span>
+            </button>
+            <button class="illustration-card" type="button" data-src="assets/illustration-orion.png" data-caption="Sci-fi character design: Orion" data-reveal>
+              <span class="illustration-image"><img src="assets/illustration-orion.png" alt="Sci-fi character design named Orion"></span>
+              <span class="illustration-overlay" aria-hidden="true"><i>+</i>View full image</span>
+              <span class="illustration-meta"><span>ORIGINAL / 06</span><span>ORION</span></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="quote-section" aria-label="Design philosophy">
+      <img class="quote-background" src="assets/quote-background.png" alt="">
+      <div class="quote-shade" aria-hidden="true"></div>
+      <div class="quote-label">
+        <span>FIELD NOTE</span>
+        <span>04 / 04</span>
+      </div>
+      <div class="quote-inner" data-reveal>
+        <span class="quote-mark" aria-hidden="true">"</span>
+        <blockquote>
+          Gamers can feel when developers are passionate about their games. Don't be afraid to
+          hold onto your unique vision: just be aware that it may not turn out exactly how you
+          envisioned.
+        </blockquote>
+        <p><span class="quote-author">Scott Rogers, </span><cite>Level Up! The Guide to Great Video Game Design</cite></p>
+      </div>
+    </section>
+
+    <section class="contact-section" id="contact" aria-labelledby="contact-title">
+      <div class="contact-grid">
+        <div class="contact-title-block" data-reveal>
+          <p class="section-code">SEC. 04 / CONTACT</p>
+          <h2 id="contact-title">Have an emotion worth triggering?</h2>
+        </div>
+        <div class="contact-side" data-reveal>
+          <p>
+            I am interested in game design, level design and real-time narrative work that
+            treats atmosphere as part of the mechanic.
+          </p>
+          <div class="contact-links">
+            <a href="https://www.bilibili.com/video/BV1qS4b61EEk/?spm_id_from=333.1387.homepage.video_card.click&amp;vd_source=306e2619059f643453ebc7e89d26d4e2" target="_blank" rel="noreferrer">
+              <span><i>01</i>Watch the work</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 19 19 5M8 5h11v11"/></svg>
+            </a>
+            <a href="assets/NTU-Portfolio.pdf" download>
+              <span><i>02</i>Download portfolio PDF</span>
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-brand">
+      <a class="brand-square" href="#top" aria-label="Back to top">
+        <span>ZL</span>
+        <i aria-hidden="true"></i>
+      </a>
+      <div>
+        <strong>Zhang Leyin</strong>
+        <p>Emotion Trigger / Portfolio 2026</p>
+      </div>
+    </div>
+    <nav class="footer-links" aria-label="Footer navigation">
+      <a href="#work">Work</a>
+      <a href="#writers-block">Writer's Block</a>
+      <a href="#about">About</a>
+      <a href="#illustrations">Illustrations</a>
+      <a href="#top">Back to top</a>
+      <a href="editor.html">Site editor</a>
+    </nav>
+    <p class="footer-note">Built from the original NTU portfolio<br>BNBU / Game Design</p>
+  </footer>
+
+  <div class="project-modal" id="project-modal" role="dialog" aria-modal="true" aria-labelledby="project-modal-title" aria-hidden="true">
+    <div class="project-modal-backdrop" data-close-project></div>
+    <div class="project-modal-panel" role="document">
+      <div class="modal-chrome">
+        <span>Case study</span>
+        <span class="modal-position" id="modal-position">01 / 04</span>
+        <button class="icon-button modal-close" type="button" data-close-project aria-label="Close case study">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></svg>
+        </button>
+      </div>
+      <div id="project-content"></div>
+    </div>
+  </div>
+
+  <dialog class="lightbox" id="lightbox" aria-label="Illustration preview">
+    <div class="lightbox-inner">
+      <div class="lightbox-topline">
+        <span>Visual archive preview</span>
+        <button class="icon-button lightbox-close" type="button" aria-label="Close image">
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 5 14 14M19 5 5 19"/></svg>
+        </button>
+      </div>
+      <img id="lightbox-image" src="" alt="">
+      <p id="lightbox-caption"></p>
+    </div>
+  </dialog>
+
+  <script src="app.js"></script>
+  <script src="editor.js"></script>
+</body>
+</html>
