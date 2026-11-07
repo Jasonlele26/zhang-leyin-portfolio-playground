@@ -34,6 +34,7 @@
     <nav class="desktop-nav" aria-label="Primary navigation">
       <a href="#work">Work</a>
       <a href="#about">About</a>
+      <a href="#playground">Playground</a>
       <a href="#illustrations">Illustrations</a>
       <a href="#contact">Contact</a>
     </nav>
@@ -54,13 +55,14 @@
 
   <nav class="mobile-menu" id="mobile-menu" aria-label="Mobile navigation" aria-hidden="true">
     <div class="mobile-menu-top">
-      <span>Navigation / 01-04</span>
+      <span>Navigation / 01-05</span>
       <span>Portfolio 2026</span>
     </div>
     <a href="#work"><span>01</span>Work</a>
     <a href="#about"><span>02</span>About</a>
-    <a href="#illustrations"><span>03</span>Illustrations</a>
-    <a href="#contact"><span>04</span>Contact</a>
+    <a href="#playground"><span>03</span>Playground</a>
+    <a href="#illustrations"><span>04</span>Illustrations</a>
+    <a href="#contact"><span>05</span>Contact</a>
     <div class="mobile-menu-meta">
       <span>BNBU / Game Design</span>
       <span>Emotion Trigger</span>
@@ -100,7 +102,7 @@
       <aside class="hero-panel" aria-label="Portfolio introduction">
         <div class="hero-panel-top">
           <span class="status-badge"><i></i><span>Selected portfolio</span></span>
-          <span>01 / 04</span>
+          <span>01 / 05</span>
         </div>
 
         <div class="hero-panel-copy">
@@ -405,10 +407,89 @@
       </div>
     </section>
 
-    <section class="illustrations-section" id="illustrations" aria-labelledby="illustrations-title">
+    <section class="playground-section" id="playground" aria-labelledby="playground-title">
       <div class="section-shell">
         <div class="section-rail" data-reveal>
           <span>SEC. 03</span>
+          <span>INTERACTIVE LAB</span>
+          <span>CAMERA / LIVE</span>
+        </div>
+
+        <div class="section-main">
+          <header class="section-heading playground-heading" data-reveal>
+            <p class="section-code">TEACHABLE MACHINE // OBJECT-CONTROLLED IMAGE</p>
+            <h2 id="playground-title">The object changes the image.</h2>
+            <p class="section-lead">
+              A live camera study where a black or white phone becomes the control surface
+              for an unstable visual system.
+            </p>
+          </header>
+
+          <div class="teachable-console" data-teachable-console data-state="idle">
+            <div class="teachable-screen">
+              <iframe
+                class="teachable-frame"
+                data-teachable-frame
+                title="Live camera classification visual"
+                allow="camera"
+                hidden
+              ></iframe>
+
+              <div class="teachable-cover">
+                <div class="teachable-cover-meta">
+                  <span>INPUT / CAMERA</span>
+                  <span>MODEL / 02 CLASSES</span>
+                </div>
+                <div class="teachable-monogram" aria-hidden="true">
+                  <span>B</span>
+                  <i></i>
+                  <span>W</span>
+                </div>
+                <div class="teachable-cover-copy">
+                  <span class="teachable-state" data-teachable-status>STANDBY</span>
+                  <h3>Object-controlled image system</h3>
+                  <button class="teachable-start" type="button" data-teachable-start>
+                    <svg aria-hidden="true" viewBox="0 0 24 24">
+                      <path d="M4 8h3l1.6-2h6.8L17 8h3v11H4V8Z"/>
+                      <circle cx="12" cy="13" r="3.2"/>
+                    </svg>
+                    <span>Start camera</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="teachable-controls">
+              <div class="teachable-readout">
+                <span>Current state</span>
+                <strong data-teachable-label>NEUTRAL</strong>
+              </div>
+              <div class="teachable-meter">
+                <span>Signal</span>
+                <i><b data-teachable-meter></b></i>
+              </div>
+              <div class="teachable-test" aria-label="Preview visual states">
+                <button type="button" data-teachable-test="neutral" aria-label="Preview neutral state">N</button>
+                <button type="button" data-teachable-test="black" aria-label="Preview black phone state">B</button>
+                <button type="button" data-teachable-test="white" aria-label="Preview white phone state">W</button>
+              </div>
+              <button class="teachable-stop" type="button" data-teachable-stop hidden>
+                Stop camera
+              </button>
+            </div>
+
+            <p class="teachable-message" data-teachable-message>
+              Camera off. Nothing is recorded.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="illustrations-section" id="illustrations" aria-labelledby="illustrations-title">
+      <div class="section-shell">
+        <div class="section-rail" data-reveal>
+          <span>SEC. 04</span>
           <span>VISUAL ARCHIVE</span>
           <span>N = 06</span>
         </div>
@@ -461,7 +542,7 @@
       <div class="quote-shade" aria-hidden="true"></div>
       <div class="quote-label">
         <span>FIELD NOTE</span>
-        <span>04 / 04</span>
+        <span>05 / 05</span>
       </div>
       <div class="quote-inner" data-reveal>
         <span class="quote-mark" aria-hidden="true">"</span>
@@ -477,7 +558,7 @@
     <section class="contact-section" id="contact" aria-labelledby="contact-title">
       <div class="contact-grid">
         <div class="contact-title-block" data-reveal>
-          <p class="section-code">SEC. 04 / CONTACT</p>
+          <p class="section-code">SEC. 05 / CONTACT</p>
           <h2 id="contact-title">Have an emotion worth triggering?</h2>
         </div>
         <div class="contact-side" data-reveal>
@@ -515,6 +596,7 @@
       <a href="#work">Work</a>
       <a href="#writers-block">Writer's Block</a>
       <a href="#about">About</a>
+      <a href="#playground">Playground</a>
       <a href="#illustrations">Illustrations</a>
       <a href="#top">Back to top</a>
       <a href="editor.html">Site editor</a>
@@ -550,6 +632,7 @@
   </dialog>
 
   <script src="app.js"></script>
+  <script src="interactive.js"></script>
   <script src="editor.js"></script>
 </body>
 </html>

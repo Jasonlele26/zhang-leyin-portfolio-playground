@@ -10,6 +10,10 @@ await mkdir(dist, { recursive: true });
 
 const publicFiles = [
   "app.js",
+  "interactive.js",
+  "playground-frame.html",
+  "playground-frame.css",
+  "playground-frame.js",
   "styles.css",
   "favicon.svg",
   "robots.txt",
@@ -57,6 +61,12 @@ for (const reference of assetReferences) {
 await cp(
   path.join(root, "assets", "fonts"),
   path.join(dist, "assets", "fonts"),
+  { recursive: true, force: true }
+);
+
+await cp(
+  path.join(root, "assets", "teachable"),
+  path.join(dist, "assets", "teachable"),
   { recursive: true, force: true }
 );
 
