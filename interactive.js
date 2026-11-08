@@ -157,6 +157,7 @@
     }
 
     if (data.type === "teachable:warning") {
+      setStatus("CAMERA LIVE");
       setMessage(data.message || "Recognition paused / retrying");
     }
   });

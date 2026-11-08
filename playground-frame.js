@@ -9,6 +9,8 @@ const BLACK_STABLE_FRAMES = 1;
 const WHITE_STABLE_FRAMES = 2;
 const CLASSIFY_DELAY = 150;
 const NEUTRAL_AFTER_FRAMES = 3;
+const TFJS_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4/dist/tf.min.js";
+const TEACHABLE_URL = "https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js";
 
 const VISUALS = {
   "black phone": {
@@ -40,6 +42,7 @@ let lowConfidenceFrames = 0;
 let confidence = 0;
 let rawLabel = "Waiting";
 let stateStarted = 0;
+const libraryScripts = new Map();
 
 function setup() {
   const canvas = createCanvas(960, 540);
@@ -64,12 +67,6 @@ async function boot() {
 
   try {
     await waitForVideo(video.elt);
-    setStatus("LOADING MODEL");
-    model = await loadTeachableModel();
-    modelReady = true;
-    setStatus("MODEL READY");
-    notifyParent({ type: "teachable:model-ready" });
-    classifyLoop();
   } catch (error) {
     console.error("Startup error:", error);
     setStatus(`ERROR: ${friendlyError(error)}`);
@@ -77,7 +74,69 @@ async function boot() {
       type: "teachable:error",
       message: friendlyError(error)
     });
+    return;
   }
+
+  setStatus("CAMERA READY / LOADING MODEL");
+  loadModelWithRetry();
+}
+
+async function loadModelWithRetry() {
+  if (modelReady) return;
+
+  setStatus("LOADING MODEL");
+
+  try {
+    await ensureModelLibraries();
+    model = await loadTeachableModel();
+    modelReady = true;
+    setStatus("MODEL READY");
+    notifyParent({ type: "teachable:model-ready" });
+    classifyLoop();
+  } catch (error) {
+    console.error("Model loading error:", error);
+    setStatus(`MODEL RETRY: ${friendlyError(error)}`);
+    notifyParent({
+      type: "teachable:warning",
+      message: "Camera live / loading recognition model"
+    });
+    setTimeout(() => {
+      if (!modelReady) loadModelWithRetry();
+    }, 3000);
+  }
+}
+
+function loadLibrary(src) {
+  if (libraryScripts.has(src)) return libraryScripts.get(src);
+
+  const promise = new Promise((resolve, reject) => {
+    const script = document.createElement("script");
+    script.src = src;
+    script.crossOrigin = "anonymous";
+    script.onload = resolve;
+    script.onerror = () => {
+      script.remove();
+      libraryScripts.delete(src);
+      reject(new Error(`Library failed: ${src}`));
+    };
+    document.head.append(script);
+  });
+
+  libraryScripts.set(src, promise);
+  return promise;
+}
+
+async function ensureModelLibraries() {
+  if (typeof window.tf === "undefined") {
+    await loadLibrary(TFJS_URL);
+  }
+  if (typeof window.tmImage === "undefined") {
+    await loadLibrary(TEACHABLE_URL);
+  }
+  if (!window.tf || !window.tmImage) {
+    throw new Error("Teachable Machine library unavailable");
+  }
+  await window.tf.ready();
 }
 
 async function loadTeachableModel() {
@@ -100,7 +159,7 @@ async function loadTeachableModel() {
   );
   const weightData = joinArrayBuffers(weightBuffers);
 
-  const layersModel = await tf.loadLayersModel({
+  const layersModel = await window.tf.loadLayersModel({
     load: async () => ({
       modelTopology: modelJSON.modelTopology,
       weightSpecs,
@@ -108,7 +167,7 @@ async function loadTeachableModel() {
     })
   });
 
-  return new tmImage.CustomMobileNet(layersModel, metadata);
+  return new window.tmImage.CustomMobileNet(layersModel, metadata);
 }
 
 async function loadWeightBuffers(manifest) {
