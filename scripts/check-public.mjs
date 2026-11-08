@@ -49,7 +49,10 @@ for (const match of index.matchAll(/(?:src|href)="([^"]+)"/g)) {
 const publicTextFiles = files.filter((file) =>
   /\.(html|css|js)$/i.test(file)
 );
-for (const file of publicTextFiles) {
+const referenceTextFiles = publicTextFiles.filter(
+  (file) => !/[\\/]assets[\\/]teachable[\\/]asset-[^\\/]+\.min\.js$/i.test(file)
+);
+for (const file of referenceTextFiles) {
   const text = await readFile(file, "utf8");
   const found = [
     ...text.matchAll(/url\("([^"]+)"\)/g),

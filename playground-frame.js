@@ -2,15 +2,16 @@
 // existing p5 project creates "model-1.json" instead of replacing the old file.
 const MODEL_URL = "assets/teachable/phone-model.json";
 const METADATA_URL = "assets/teachable/metadata.json";
-const BLACK_CONFIDENCE = 0.66;
-const WHITE_CONFIDENCE = 0.82;
-const MIN_CLASS_MARGIN = 0.24;
-const BLACK_STABLE_FRAMES = 1;
-const WHITE_STABLE_FRAMES = 2;
+const BLACK_CONFIDENCE = 0.55;
+const WHITE_CONFIDENCE = 0.70;
+const MIN_CLASS_MARGIN = 0.18;
+const BLACK_STABLE_FRAMES = 2;
+const WHITE_STABLE_FRAMES = 3;
 const CLASSIFY_DELAY = 150;
-const NEUTRAL_AFTER_FRAMES = 3;
-const TFJS_URL = "https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4/dist/tf.min.js";
-const TEACHABLE_URL = "https://cdn.jsdelivr.net/npm/@teachablemachine/image@0.8.5/dist/teachablemachine-image.min.js";
+const NEUTRAL_AFTER_FRAMES = 4;
+const SMOOTHING_WINDOW = 3;
+const TFJS_URL = "assets/teachable/asset-tf.min.js";
+const TEACHABLE_URL = "assets/teachable/asset-tm.min.js";
 
 const VISUALS = {
   "black phone": {
@@ -42,6 +43,7 @@ let lowConfidenceFrames = 0;
 let confidence = 0;
 let rawLabel = "Waiting";
 let stateStarted = 0;
+let predictionHistory = [];
 const libraryScripts = new Map();
 
 function setup() {
@@ -90,6 +92,7 @@ async function loadModelWithRetry() {
     await ensureModelLibraries();
     model = await loadTeachableModel();
     modelReady = true;
+    predictionHistory = [];
     setStatus("MODEL READY");
     notifyParent({ type: "teachable:model-ready" });
     classifyLoop();
@@ -249,7 +252,29 @@ async function classifyLoop() {
 function handlePredictions(predictions) {
   if (!Array.isArray(predictions) || predictions.length === 0) return;
 
-  const ranked = [...predictions].sort(
+  predictionHistory.push(
+    predictions.map((item) => ({
+      className: item.className,
+      probability: item.probability
+    }))
+  );
+  if (predictionHistory.length > SMOOTHING_WINDOW) {
+    predictionHistory.shift();
+  }
+
+  const averaged = predictions.map((item) => {
+    const values = predictionHistory
+      .map((frame) => frame.find((entry) => entry.className === item.className))
+      .filter(Boolean);
+    return {
+      className: item.className,
+      probability: values.reduce(
+        (sum, entry) => sum + entry.probability,
+        0
+      ) / values.length
+    };
+  });
+  const ranked = averaged.sort(
     (first, second) => second.probability - first.probability
   );
   const best = ranked[0];
@@ -590,6 +615,7 @@ function keyPressed() {
 
 function setManualState(label) {
   const visual = visualState(label);
+  predictionHistory = [];
   stableLabel = label;
   confidence = 1;
   rawLabel = label === "neutral" ? "Manual neutral" : label;
