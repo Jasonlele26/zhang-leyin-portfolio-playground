@@ -72,11 +72,11 @@
     window.clearTimeout(frameTimer);
     frameTimer = window.setTimeout(() => {
       if (!active || modelReady) return;
-      if (!frameReady) {
-        showError("The interactive frame did not load.");
-        return;
-      }
-      setMessage("Waiting for camera permission or model download");
+      setMessage(
+        frameReady
+          ? "Waiting for camera permission or model download"
+          : "Loading interactive modules"
+      );
     }, 12000);
 
     frame.onload = () => {
@@ -155,6 +155,10 @@
     if (data.type === "teachable:error") {
       showError(data.message);
     }
+
+    if (data.type === "teachable:warning") {
+      setMessage(data.message || "Recognition paused / retrying");
+    }
   });
 
   startButton?.addEventListener("click", start);
@@ -174,7 +178,4 @@
   });
 
   window.addEventListener("pagehide", stop);
-  document.addEventListener("visibilitychange", () => {
-    if (document.hidden && active) stop();
-  });
 })();

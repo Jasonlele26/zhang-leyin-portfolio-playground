@@ -178,8 +178,8 @@ async function classifyLoop() {
     console.error("Classification error:", error);
     setStatus(`CLASSIFY ERROR: ${friendlyError(error)}`);
     notifyParent({
-      type: "teachable:error",
-      message: friendlyError(error)
+      type: "teachable:warning",
+      message: "Recognition paused / retrying"
     });
   } finally {
     classifying = false;
