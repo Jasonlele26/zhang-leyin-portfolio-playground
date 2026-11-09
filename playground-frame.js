@@ -247,6 +247,7 @@ function drawScanField() {
   drawingContext.restore();
 
   drawScanCorners(bounds);
+  drawConnectingTitle();
 
   noStroke();
   fill(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 190);
@@ -256,6 +257,47 @@ function drawScanField() {
   textAlign(RIGHT, BOTTOM);
   text(faceLocked ? "FACE DETECTED" : "SEARCHING", bounds.x + bounds.w, bounds.y - 9);
   textAlign(LEFT, TOP);
+}
+
+function drawConnectingTitle() {
+  const elapsed = performance.now() - scanStartedAt;
+  const visible = (
+    (elapsed >= 260 && elapsed < 720) ||
+    (elapsed >= 1120 && elapsed < 1580)
+  );
+  if (!visible) return;
+
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const jitter = frameCount % 6 < 2 ? random(-4, 4) : 0;
+
+  push();
+  textAlign(CENTER, CENTER);
+  textSize(62);
+  noStroke();
+  drawingContext.shadowBlur = 0;
+
+  fill(255, 35, 52, 175);
+  text("CONNECTING", centerX - 5 + jitter, centerY);
+  fill(55, 225, 255, 135);
+  text("CONNECTING", centerX + 5, centerY + 2);
+  fill(MARATHON_YELLOW[0], MARATHON_YELLOW[1], MARATHON_YELLOW[2], 245);
+  drawingContext.shadowColor = "rgba(255,45,58,0.8)";
+  drawingContext.shadowBlur = 18;
+  text("CONNECTING", centerX, centerY);
+  drawingContext.shadowBlur = 0;
+
+  noFill();
+  stroke(255, 45, 58, 190);
+  strokeWeight(1);
+  rect(centerX - 222, centerY - 48, 444, 96);
+  stroke(MARATHON_CYAN[0], MARATHON_CYAN[1], MARATHON_CYAN[2], 110);
+  rect(centerX - 232, centerY - 54, 464, 108);
+
+  noStroke();
+  fill(255, 45, 58, 195);
+  rect(centerX - 222, centerY + 20, 444, random(3, 9));
+  pop();
 }
 
 function getScanBounds() {
