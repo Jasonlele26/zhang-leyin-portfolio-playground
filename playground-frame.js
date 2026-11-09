@@ -21,6 +21,9 @@ let lastFaceNotice = 0;
 let trackerRetryTimer = 0;
 let stateStarted = 0;
 let effectStartAt = 0;
+let scanStartedAt = 0;
+let resultStartedAt = 0;
+let lastScanNotice = 0;
 let effectActive = false;
 
 function setup() {
@@ -64,7 +67,8 @@ async function boot() {
   }
 
   setStatus("CAMERA READY / LOADING FACE MODEL");
-  effectStartAt = performance.now() + EFFECT_DELAY;
+  scanStartedAt = performance.now();
+  effectStartAt = scanStartedAt + EFFECT_DELAY;
   loadFaceTrackerWithRetry();
 }
 
@@ -149,17 +153,25 @@ function draw() {
   drawVideo();
   detectFace();
 
-  if (!effectActive && performance.now() >= effectStartAt) {
+  const now = performance.now();
+  if (!effectActive && now >= effectStartAt) {
     effectActive = true;
+    resultStartedAt = now;
+    notifyParent({
+      type: "scan:result",
+      locked: Boolean(faceLandmarks?.length)
+    });
   }
 
   if (!effectActive) {
-    drawCountdownField();
+    drawScanField();
+    notifyScanState(now);
     drawInterface();
     return;
   }
 
   drawSignalField();
+  drawResultBurst(now);
 
   if (faceLandmarks && faceLandmarks.length) {
     drawMatrixFace(faceLandmarks);
@@ -171,18 +183,119 @@ function draw() {
   drawInterface();
 }
 
-function drawCountdownField() {
+function drawScanField() {
+  const bounds = getScanBounds();
+  const progress = scanProgress();
+  const scanY = bounds.y + bounds.h * progress;
+
   noStroke();
-  fill(0, 88);
+  fill(0, 104);
   rect(0, 0, width, height);
 
-  const size = 130 + sin(frameCount * 0.035) * 8;
-  noFill();
-  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 120);
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 24);
   strokeWeight(1);
-  rect(width / 2 - size / 2, height / 2 - size / 2, size, size);
-  line(width / 2 - size, height / 2, width / 2 + size, height / 2);
-  line(width / 2, height / 2 - size, width / 2, height / 2 + size);
+  for (let x = bounds.x; x < bounds.x + bounds.w; x += 18) {
+    line(x, bounds.y, x, bounds.y + bounds.h);
+  }
+  for (let y = bounds.y; y < bounds.y + bounds.h; y += 18) {
+    line(bounds.x, y, bounds.x + bounds.w, y);
+  }
+
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 145);
+  strokeWeight(1);
+  noFill();
+  ellipse(
+    bounds.x + bounds.w / 2,
+    bounds.y + bounds.h / 2,
+    bounds.w,
+    bounds.h
+  );
+
+  drawingContext.save();
+  drawingContext.strokeStyle = "rgba(180,255,195,0.95)";
+  drawingContext.lineWidth = 2;
+  drawingContext.shadowColor = "rgba(84,255,112,0.9)";
+  drawingContext.shadowBlur = 16;
+  drawingContext.beginPath();
+  drawingContext.moveTo(bounds.x - 12, scanY);
+  drawingContext.lineTo(bounds.x + bounds.w + 12, scanY);
+  drawingContext.stroke();
+  drawingContext.restore();
+
+  drawScanCorners(bounds);
+
+  noStroke();
+  fill(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 190);
+  textSize(9);
+  textAlign(LEFT, BOTTOM);
+  text(`${Math.round(progress * 100)}% / DEPTH ${(progress * 4.8).toFixed(2)}M`, bounds.x, bounds.y - 9);
+  textAlign(RIGHT, BOTTOM);
+  text(faceLocked ? "FACE DETECTED" : "SEARCHING", bounds.x + bounds.w, bounds.y - 9);
+  textAlign(LEFT, TOP);
+}
+
+function getScanBounds() {
+  if (faceLandmarks && faceLandmarks.length) {
+    const points = faceLandmarks.map(projectLandmark);
+    const oval = FACE_OVAL.map((index) => points[index]).filter(Boolean);
+    if (oval.length > 4) return faceBounds(oval);
+  }
+
+  return {
+    x: width / 2 - width * 0.18,
+    y: height * 0.44 - height * 0.34,
+    w: width * 0.36,
+    h: height * 0.68
+  };
+}
+
+function drawScanCorners(bounds) {
+  const size = Math.min(28, bounds.w * 0.12);
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 220);
+  strokeWeight(2);
+  line(bounds.x, bounds.y, bounds.x + size, bounds.y);
+  line(bounds.x, bounds.y, bounds.x, bounds.y + size);
+  line(bounds.x + bounds.w, bounds.y, bounds.x + bounds.w - size, bounds.y);
+  line(bounds.x + bounds.w, bounds.y, bounds.x + bounds.w, bounds.y + size);
+  line(bounds.x, bounds.y + bounds.h, bounds.x + size, bounds.y + bounds.h);
+  line(bounds.x, bounds.y + bounds.h, bounds.x, bounds.y + bounds.h - size);
+  line(bounds.x + bounds.w, bounds.y + bounds.h, bounds.x + bounds.w - size, bounds.y + bounds.h);
+  line(bounds.x + bounds.w, bounds.y + bounds.h, bounds.x + bounds.w, bounds.y + bounds.h - size);
+}
+
+function drawResultBurst(now) {
+  if (!resultStartedAt) return;
+  const age = now - resultStartedAt;
+  if (age > 650) return;
+
+  const strength = 1 - age / 650;
+  noStroke();
+  fill(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 90 * strength);
+  rect(0, 0, width, height);
+
+  drawingContext.save();
+  drawingContext.globalCompositeOperation = "difference";
+  drawingContext.fillStyle = `rgba(255,255,255,${0.52 * strength})`;
+  drawingContext.fillRect(0, random(height), width, random(4, 20));
+  drawingContext.restore();
+}
+
+function scanProgress() {
+  return constrain(
+    (performance.now() - scanStartedAt) / EFFECT_DELAY,
+    0,
+    1
+  );
+}
+
+function notifyScanState(now) {
+  if (now - lastScanNotice < 100) return;
+  lastScanNotice = now;
+  notifyParent({
+    type: "scan:state",
+    progress: scanProgress(),
+    face: Boolean(faceLandmarks?.length)
+  });
 }
 
 function drawVideo() {
@@ -235,9 +348,10 @@ function detectFace() {
     const result = faceLandmarker.detectForVideo(video.elt, now);
     faceLandmarks = result.faceLandmarks?.[0] || null;
     const nextLocked = Boolean(faceLandmarks?.length);
+    const previousLocked = faceLocked;
+    faceLocked = nextLocked;
 
-    if (nextLocked !== faceLocked || now - lastFaceNotice > 500) {
-      faceLocked = nextLocked;
+    if (effectActive && (nextLocked !== previousLocked || now - lastFaceNotice > 500)) {
       lastFaceNotice = now;
       notifyParent({
         type: "face:state",
@@ -492,6 +606,10 @@ function drawInterface() {
     MATRIX_GREEN[1],
     MATRIX_GREEN[2]
   );
+  const progress = scanProgress();
+  const resultAge = resultStartedAt
+    ? performance.now() - resultStartedAt
+    : Number.POSITIVE_INFINITY;
 
   noStroke();
   fill(0, 220);
@@ -512,7 +630,7 @@ function drawInterface() {
       ? faceLocked
         ? "FACE LOCKED"
         : "SCANNING"
-      : `STARTING IN ${Math.max(1, Math.ceil((effectStartAt - performance.now()) / 1000))}`,
+      : `SCANNING ${Math.round(progress * 100)}%`,
     40,
     height - 70
   );
@@ -524,7 +642,9 @@ function drawInterface() {
       ? faceLocked
         ? "478 LANDMARKS / LIVE"
         : "AWAITING FACE"
-      : "FACE TRACKER PRELOADING",
+      : faceLocked
+        ? "FACE DETECTED / MAPPING FEATURES"
+        : "SEARCHING FACE / BUILDING TOPOLOGY",
     40,
     height - 40
   );
@@ -534,10 +654,12 @@ function drawInterface() {
   textSize(10);
   text(
     effectActive
-      ? faceLocked
-        ? "SIGNAL ACQUIRED"
-        : "NO SIGNAL"
-      : "STANDBY",
+      ? resultAge < 650
+        ? "RESULT READY"
+        : faceLocked
+          ? "SIGNAL ACQUIRED"
+          : "NO SIGNAL"
+      : "SCAN IN PROGRESS",
     width - 24,
     24
   );

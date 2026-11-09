@@ -127,7 +127,24 @@
       modelReady = true;
       window.clearTimeout(frameTimer);
       setStatus("SCANNING");
-      setMessage("FACE MODEL READY / SEARCHING FOR FACE");
+      setMessage("FACE MODEL READY / STARTING BIOMETRIC SCAN");
+    }
+
+    if (data.type === "scan:state") {
+      const progress = Number(data.progress) || 0;
+      updateReadout(`SCANNING ${Math.round(progress * 100)}%`, progress);
+      setStatus("SCANNING");
+      setMessage(
+        data.face
+          ? "FACE DETECTED / MAPPING GEOMETRY"
+          : "SEARCHING FACE / PRELOADING MODEL"
+      );
+    }
+
+    if (data.type === "scan:result") {
+      updateReadout(data.locked ? "FACE LOCKED" : "FACE SIMULATED", 1);
+      setStatus("RESULT READY");
+      setMessage("MATRIX BIO-INTERFACE ACTIVE / NOT RECORDED");
     }
 
     if (data.type === "face:state") {
