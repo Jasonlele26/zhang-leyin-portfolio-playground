@@ -110,7 +110,7 @@ async function loadFaceTrackerWithRetry() {
     setStatus(`FACE MODEL RETRY: ${friendlyError(error)}`);
     notifyParent({
       type: "teachable:warning",
-      message: "Camera live / loading face tracking model"
+      message: `Camera live / face model: ${friendlyError(error)}`
     });
     trackerRetryTimer = window.setTimeout(loadFaceTrackerWithRetry, 3000);
   }
@@ -147,6 +147,7 @@ function draw() {
   if (faceLandmarks && faceLandmarks.length) {
     drawMatrixFace(faceLandmarks);
   } else {
+    drawFallbackFaceField();
     drawSearchMode();
   }
 
@@ -248,6 +249,28 @@ function drawMatrixFace(landmarks) {
   const oval = FACE_OVAL.map((index) => points[index]).filter(Boolean);
   if (oval.length < 4) return;
 
+  drawMatrixMask(oval, points);
+}
+
+function drawFallbackFaceField() {
+  const centerX = width / 2;
+  const centerY = height * 0.44;
+  const radiusX = width * 0.18;
+  const radiusY = height * 0.34;
+  const oval = [];
+
+  for (let index = 0; index < 36; index += 1) {
+    const angle = (TWO_PI * index) / 36;
+    oval.push({
+      x: centerX + cos(angle) * radiusX,
+      y: centerY + sin(angle) * radiusY
+    });
+  }
+
+  drawMatrixMask(oval, null, true);
+}
+
+function drawMatrixMask(oval, meshPoints, fallback = false) {
   const facePath = new Path2D();
   facePath.moveTo(oval[0].x, oval[0].y);
   for (let index = 1; index < oval.length; index += 1) {
@@ -260,13 +283,17 @@ function drawMatrixFace(landmarks) {
 
   ctx.save();
   ctx.clip(facePath);
-  ctx.fillStyle = "rgba(0, 17, 5, 0.38)";
+  ctx.fillStyle = fallback
+    ? "rgba(0, 17, 5, 0.22)"
+    : "rgba(0, 17, 5, 0.38)";
   ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
   drawCodeRain(ctx, bounds);
   drawFaceScanlines(ctx, bounds);
   ctx.restore();
 
-  drawFaceMesh(points);
+  if (meshPoints) {
+    drawFaceMesh(meshPoints);
+  }
   drawFaceOutline(oval);
 
   const scanY = bounds.y + ((millis() * 0.08) % bounds.h);
