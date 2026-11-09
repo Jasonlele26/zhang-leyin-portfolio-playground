@@ -2,6 +2,7 @@ const VISION_MODULE_URL = "assets/mediapipe/vision_bundle.mjs";
 const FACE_MODEL_URL = "assets/mediapipe/face_landmarker.task";
 const WASM_ROOT = "assets/mediapipe/wasm";
 const MATRIX_GREEN = [84, 255, 112];
+const EFFECT_DELAY = 3000;
 const FACE_OVAL = [
   10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
   397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
@@ -19,6 +20,8 @@ let lastDetectionTime = 0;
 let lastFaceNotice = 0;
 let trackerRetryTimer = 0;
 let stateStarted = 0;
+let effectStartAt = 0;
+let effectActive = false;
 
 function setup() {
   const canvas = createCanvas(960, 540);
@@ -61,6 +64,7 @@ async function boot() {
   }
 
   setStatus("CAMERA READY / LOADING FACE MODEL");
+  effectStartAt = performance.now() + EFFECT_DELAY;
   loadFaceTrackerWithRetry();
 }
 
@@ -144,6 +148,17 @@ function draw() {
   background(4);
   drawVideo();
   detectFace();
+
+  if (!effectActive && performance.now() >= effectStartAt) {
+    effectActive = true;
+  }
+
+  if (!effectActive) {
+    drawCountdownField();
+    drawInterface();
+    return;
+  }
+
   drawSignalField();
 
   if (faceLandmarks && faceLandmarks.length) {
@@ -154,6 +169,20 @@ function draw() {
   }
 
   drawInterface();
+}
+
+function drawCountdownField() {
+  noStroke();
+  fill(0, 88);
+  rect(0, 0, width, height);
+
+  const size = 130 + sin(frameCount * 0.035) * 8;
+  noFill();
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 120);
+  strokeWeight(1);
+  rect(width / 2 - size / 2, height / 2 - size / 2, size, size);
+  line(width / 2 - size, height / 2, width / 2 + size, height / 2);
+  line(width / 2, height / 2 - size, width / 2, height / 2 + size);
 }
 
 function drawVideo() {
@@ -477,13 +506,25 @@ function drawInterface() {
   textSize(10);
   textAlign(LEFT, TOP);
   text("BIO-INTERFACE / MATRIX FACE FIELD", 40, height - 100);
-  textSize(faceLocked ? 30 : 24);
-  text(faceLocked ? "FACE LOCKED" : "SCANNING", 40, height - 70);
+  textSize(effectActive && faceLocked ? 30 : 24);
+  text(
+    effectActive
+      ? faceLocked
+        ? "FACE LOCKED"
+        : "SCANNING"
+      : `STARTING IN ${Math.max(1, Math.ceil((effectStartAt - performance.now()) / 1000))}`,
+    40,
+    height - 70
+  );
 
   fill(255, 175);
   textSize(9);
   text(
-    faceLocked ? "478 LANDMARKS / LIVE" : "AWAITING FACE",
+    effectActive
+      ? faceLocked
+        ? "478 LANDMARKS / LIVE"
+        : "AWAITING FACE"
+      : "FACE TRACKER PRELOADING",
     40,
     height - 40
   );
@@ -491,7 +532,15 @@ function drawInterface() {
   fill(255);
   textAlign(RIGHT, TOP);
   textSize(10);
-  text(faceLocked ? "SIGNAL ACQUIRED" : "NO SIGNAL", width - 24, 24);
+  text(
+    effectActive
+      ? faceLocked
+        ? "SIGNAL ACQUIRED"
+        : "NO SIGNAL"
+      : "STANDBY",
+    width - 24,
+    24
+  );
   textSize(9);
   fill(255, 165);
   text("CAMERA / NOT RECORDED", width - 24, 42);
