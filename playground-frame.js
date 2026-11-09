@@ -1,50 +1,24 @@
-// The model path is deliberately unique. Uploading "model.json" into an
-// existing p5 project creates "model-1.json" instead of replacing the old file.
-const MODEL_URL = "assets/teachable/phone-model.json";
-const METADATA_URL = "assets/teachable/metadata.json";
-const BLACK_CONFIDENCE = 0.55;
-const WHITE_CONFIDENCE = 0.70;
-const MIN_CLASS_MARGIN = 0.18;
-const BLACK_STABLE_FRAMES = 2;
-const WHITE_STABLE_FRAMES = 3;
-const CLASSIFY_DELAY = 150;
-const NEUTRAL_AFTER_FRAMES = 4;
-const SMOOTHING_WINDOW = 3;
-const TFJS_URL = "assets/teachable/asset-tf.min.js";
-const TEACHABLE_URL = "assets/teachable/asset-tm.min.js";
+const VISION_MODULE_URL = "assets/mediapipe/vision_bundle.mjs";
+const FACE_MODEL_URL = "assets/mediapipe/face_landmarker.task";
+const WASM_ROOT = "assets/mediapipe/wasm";
+const MATRIX_GREEN = [84, 255, 112];
+const FACE_OVAL = [
+  10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
+  397, 365, 379, 378, 400, 377, 152, 148, 176, 149, 150, 136,
+  172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
+];
+const GLYPHS = "01{}[]<>/\\|+-=:_;XYZ01";
 
-const VISUALS = {
-  "black phone": {
-    mode: "black",
-    name: "BLACK PHONE",
-    accent: [192, 254, 4]
-  },
-  "white phone": {
-    mode: "white",
-    name: "WHITE PHONE",
-    accent: [255, 255, 255]
-  }
-};
-
-const NEUTRAL_VISUAL = {
-  mode: "idle",
-  name: "NEUTRAL",
-  accent: [115, 115, 115]
-};
-
-let model;
 let video;
-let modelReady = false;
-let classifying = false;
-let stableLabel = "Neutral";
-let candidateLabel = "";
-let candidateFrames = 0;
-let lowConfidenceFrames = 0;
-let confidence = 0;
-let rawLabel = "Waiting";
+let faceLandmarker;
+let faceLandmarks = null;
+let faceLocked = false;
+let faceTrackerReady = false;
+let lastVideoTime = -1;
+let lastDetectionTime = 0;
+let lastFaceNotice = 0;
+let trackerRetryTimer = 0;
 let stateStarted = 0;
-let predictionHistory = [];
-const libraryScripts = new Map();
 
 function setup() {
   const canvas = createCanvas(960, 540);
@@ -55,10 +29,17 @@ function setup() {
   notifyParent({ type: "teachable:frame-ready" });
 
   video = createCapture(
-    { video: { facingMode: "user" }, audio: false },
-    () => setStatus("CAMERA READY / LOADING MODEL")
+    {
+      video: {
+        facingMode: "user",
+        width: { ideal: 1280 },
+        height: { ideal: 720 }
+      },
+      audio: false
+    },
+    () => setStatus("CAMERA READY / LOADING FACE MODEL")
   );
-  video.size(640, 480);
+  video.size(960, 540);
   video.hide();
 
   boot();
@@ -70,8 +51,8 @@ async function boot() {
   try {
     await waitForVideo(video.elt);
   } catch (error) {
-    console.error("Startup error:", error);
-    setStatus(`ERROR: ${friendlyError(error)}`);
+    console.error("Camera startup error:", error);
+    setStatus(`CAMERA ERROR: ${friendlyError(error)}`);
     notifyParent({
       type: "teachable:error",
       message: friendlyError(error)
@@ -79,132 +60,60 @@ async function boot() {
     return;
   }
 
-  setStatus("CAMERA READY / LOADING MODEL");
-  loadModelWithRetry();
+  setStatus("CAMERA READY / LOADING FACE MODEL");
+  loadFaceTrackerWithRetry();
 }
 
-async function loadModelWithRetry() {
-  if (modelReady) return;
-
-  setStatus("LOADING MODEL");
+async function loadFaceTrackerWithRetry() {
+  if (faceTrackerReady) return;
+  window.clearTimeout(trackerRetryTimer);
+  setStatus("LOADING FACE MODEL");
 
   try {
-    await ensureModelLibraries();
-    model = await loadTeachableModel();
-    modelReady = true;
-    predictionHistory = [];
-    setStatus("MODEL READY");
+    const vision = await import(VISION_MODULE_URL);
+    const fileset = await vision.FilesetResolver.forVisionTasks(WASM_ROOT);
+    const options = {
+      baseOptions: {
+        modelAssetPath: FACE_MODEL_URL,
+        delegate: "GPU"
+      },
+      runningMode: "VIDEO",
+      numFaces: 1,
+      outputFaceBlendshapes: false,
+      outputFacialTransformationMatrixes: false
+    };
+
+    try {
+      faceLandmarker = await vision.FaceLandmarker.createFromOptions(
+        fileset,
+        options
+      );
+    } catch (gpuError) {
+      console.warn("GPU face tracker failed, retrying on CPU.", gpuError);
+      faceLandmarker = await vision.FaceLandmarker.createFromOptions(
+        fileset,
+        {
+          ...options,
+          baseOptions: {
+            ...options.baseOptions,
+            delegate: "CPU"
+          }
+        }
+      );
+    }
+
+    faceTrackerReady = true;
+    setStatus("FACE MODEL READY");
     notifyParent({ type: "teachable:model-ready" });
-    classifyLoop();
   } catch (error) {
-    console.error("Model loading error:", error);
-    setStatus(`MODEL RETRY: ${friendlyError(error)}`);
+    console.error("Face model loading error:", error);
+    setStatus(`FACE MODEL RETRY: ${friendlyError(error)}`);
     notifyParent({
       type: "teachable:warning",
-      message: "Camera live / loading recognition model"
+      message: "Camera live / loading face tracking model"
     });
-    setTimeout(() => {
-      if (!modelReady) loadModelWithRetry();
-    }, 3000);
+    trackerRetryTimer = window.setTimeout(loadFaceTrackerWithRetry, 3000);
   }
-}
-
-function loadLibrary(src) {
-  if (libraryScripts.has(src)) return libraryScripts.get(src);
-
-  const promise = new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.src = src;
-    script.crossOrigin = "anonymous";
-    script.onload = resolve;
-    script.onerror = () => {
-      script.remove();
-      libraryScripts.delete(src);
-      reject(new Error(`Library failed: ${src}`));
-    };
-    document.head.append(script);
-  });
-
-  libraryScripts.set(src, promise);
-  return promise;
-}
-
-async function ensureModelLibraries() {
-  if (typeof window.tf === "undefined") {
-    await loadLibrary(TFJS_URL);
-  }
-  if (typeof window.tmImage === "undefined") {
-    await loadLibrary(TEACHABLE_URL);
-  }
-  if (!window.tf || !window.tmImage) {
-    throw new Error("Teachable Machine library unavailable");
-  }
-  await window.tf.ready();
-}
-
-async function loadTeachableModel() {
-  const [modelResponse, metadataResponse] = await Promise.all([
-    fetch(MODEL_URL),
-    fetch(METADATA_URL)
-  ]);
-
-  if (!modelResponse.ok || !metadataResponse.ok) {
-    throw new Error(
-      `Model files: ${modelResponse.status} / ${metadataResponse.status}`
-    );
-  }
-
-  const modelJSON = await modelResponse.json();
-  const metadata = await metadataResponse.json();
-  const weightBuffers = await loadWeightBuffers(modelJSON.weightsManifest);
-  const weightSpecs = modelJSON.weightsManifest.flatMap(
-    (group) => group.weights
-  );
-  const weightData = joinArrayBuffers(weightBuffers);
-
-  const layersModel = await window.tf.loadLayersModel({
-    load: async () => ({
-      modelTopology: modelJSON.modelTopology,
-      weightSpecs,
-      weightData
-    })
-  });
-
-  return new window.tmImage.CustomMobileNet(layersModel, metadata);
-}
-
-async function loadWeightBuffers(manifest) {
-  const paths = manifest.flatMap((group) => group.paths);
-  const modelDirectory = new URL(".", new URL(MODEL_URL, window.location.href));
-  const responses = await Promise.all(
-    paths.map((path) => fetch(new URL(path, modelDirectory)))
-  );
-
-  responses.forEach((response) => {
-    if (!response.ok) {
-      throw new Error(`Weights file: ${response.status}`);
-    }
-  });
-
-  return Promise.all(responses.map((response) => response.arrayBuffer()));
-}
-
-function joinArrayBuffers(buffers) {
-  if (buffers.length === 1) return buffers[0];
-
-  const totalLength = buffers.reduce(
-    (sum, buffer) => sum + buffer.byteLength,
-    0
-  );
-  const result = new Uint8Array(totalLength);
-  let offset = 0;
-
-  buffers.forEach((buffer) => {
-    result.set(new Uint8Array(buffer), offset);
-    offset += buffer.byteLength;
-  });
-
-  return result.buffer;
 }
 
 function waitForVideo(element) {
@@ -229,368 +138,346 @@ function waitForVideo(element) {
   });
 }
 
-async function classifyLoop() {
-  if (!modelReady || classifying) return;
-  classifying = true;
-
-  try {
-    const predictions = await model.predict(video.elt);
-    handlePredictions(predictions);
-  } catch (error) {
-    console.error("Classification error:", error);
-    setStatus(`CLASSIFY ERROR: ${friendlyError(error)}`);
-    notifyParent({
-      type: "teachable:warning",
-      message: "Recognition paused / retrying"
-    });
-  } finally {
-    classifying = false;
-    setTimeout(classifyLoop, CLASSIFY_DELAY);
-  }
-}
-
-function handlePredictions(predictions) {
-  if (!Array.isArray(predictions) || predictions.length === 0) return;
-
-  predictionHistory.push(
-    predictions.map((item) => ({
-      className: item.className,
-      probability: item.probability
-    }))
-  );
-  if (predictionHistory.length > SMOOTHING_WINDOW) {
-    predictionHistory.shift();
-  }
-
-  const averaged = predictions.map((item) => {
-    const values = predictionHistory
-      .map((frame) => frame.find((entry) => entry.className === item.className))
-      .filter(Boolean);
-    return {
-      className: item.className,
-      probability: values.reduce(
-        (sum, entry) => sum + entry.probability,
-        0
-      ) / values.length
-    };
-  });
-  const ranked = averaged.sort(
-    (first, second) => second.probability - first.probability
-  );
-  const best = ranked[0];
-  const runnerUp = ranked[1] || { probability: 0 };
-
-  rawLabel = best.className;
-  confidence = best.probability;
-  const label = normalizeLabel(best.className);
-  const margin = best.probability - runnerUp.probability;
-  const requiredConfidence = label === "white phone"
-    ? WHITE_CONFIDENCE
-    : label === "black phone"
-      ? BLACK_CONFIDENCE
-      : 1;
-  const requiredFrames = label === "white phone"
-    ? WHITE_STABLE_FRAMES
-    : BLACK_STABLE_FRAMES;
-  const accepted = (
-    confidence >= requiredConfidence &&
-    margin >= MIN_CLASS_MARGIN
-  );
-
-  if (accepted) {
-    lowConfidenceFrames = 0;
-
-    if (label === candidateLabel) {
-      candidateFrames += 1;
-    } else {
-      candidateLabel = label;
-      candidateFrames = 1;
-    }
-
-    if (candidateFrames >= requiredFrames && label !== stableLabel) {
-      stableLabel = label;
-      stateStarted = millis();
-    }
-  } else {
-    candidateFrames = 0;
-    lowConfidenceFrames += 1;
-
-    if (
-      lowConfidenceFrames >= NEUTRAL_AFTER_FRAMES &&
-      stableLabel !== "Neutral"
-    ) {
-      stableLabel = "Neutral";
-      stateStarted = millis();
-    }
-  }
-
-  const visual = visualState(stableLabel);
-  setStatus(
-    `RAW ${rawLabel.toUpperCase()} ${Math.round(confidence * 100)}% / ` +
-    `MARGIN ${Math.round(margin * 100)}% / ${visual.name}`
-  );
-  notifyParent({
-    type: "teachable:state",
-    state: visual.mode === "idle" ? "neutral" : visual.mode,
-    label: visual.name,
-    confidence
-  });
-}
-
 function draw() {
-  background(12);
+  background(4);
   drawVideo();
+  detectFace();
+  drawSignalField();
 
-  const visual = visualState(stableLabel);
-
-  if (visual.mode === "black") {
-    drawBlackPhoneMode(visual);
-  } else if (visual.mode === "white") {
-    drawWhitePhoneMode(visual);
+  if (faceLandmarks && faceLandmarks.length) {
+    drawMatrixFace(faceLandmarks);
   } else {
-    drawNeutralMode(visual);
+    drawSearchMode();
   }
 
-  drawInterface(visual);
+  drawInterface();
 }
 
 function drawVideo() {
   if (!video || !video.elt || !video.elt.videoWidth) return;
-
-  const videoAspect = video.elt.videoWidth / video.elt.videoHeight;
-  const canvasAspect = width / height;
-  let drawWidth = width;
-  let drawHeight = height;
-
-  if (videoAspect > canvasAspect) {
-    drawWidth = height * videoAspect;
-  } else {
-    drawHeight = width / videoAspect;
-  }
+  const rect = getVideoRect();
 
   push();
   translate(width, 0);
   scale(-1, 1);
-  image(
-    video,
-    (width - drawWidth) / 2,
-    (height - drawHeight) / 2,
-    drawWidth,
-    drawHeight
-  );
+  image(video, rect.x, rect.y, rect.w, rect.h);
   pop();
 }
 
-function drawBlackPhoneMode(visual) {
-  const accent = visual.accent;
+function getVideoRect() {
+  const sourceWidth = video?.elt?.videoWidth || 4;
+  const sourceHeight = video?.elt?.videoHeight || 3;
+  const scale = Math.max(width / sourceWidth, height / sourceHeight);
+  const w = sourceWidth * scale;
+  const h = sourceHeight * scale;
 
-  noStroke();
-  fill(242, 32, 10, 112);
-  rect(0, 0, width, height);
-
-  blendMode(SCREEN);
-  fill(accent[0], accent[1], accent[2], 66);
-  rect(0, 0, width, height);
-  blendMode(BLEND);
-
-  stroke(accent[0], accent[1], accent[2], 190);
-  strokeWeight(frameCount % 6 < 2 ? 3 : 1);
-  for (let y = (frameCount * 5) % 7; y < height; y += 7) {
-    line(0, y, width, y);
-  }
-
-  noStroke();
-  for (let i = 0; i < 30; i += 1) {
-    const speed = 5 + (i % 7);
-    const x = (frameCount * speed + i * 83) % (width + 320) - 160;
-    const y = (i * 43 + frameCount * (1 + (i % 3))) % height;
-    const w = 38 + ((i * 31 + frameCount * 3) % 260);
-    const h = 4 + (i % 5) * 6;
-    fill(
-      i % 3 === 0
-        ? color(255, 255, 255, 105)
-        : color(accent[0], accent[1], accent[2], 145)
-    );
-    rect(x, y, w, h);
-  }
-
-  if (frameCount % 7 < 2) {
-    noStroke();
-    fill(255, 255, 255, 82);
-    rect(0, random(height), width, random(3, 22));
-  }
-
-  blendMode(DIFFERENCE);
-  noStroke();
-  fill(255, 255, 255, frameCount % 22 < 3 ? 118 : 24);
-  rect(0, (frameCount * 29) % height, width, random(12, 54));
-  blendMode(BLEND);
-
-  drawGlitchFrame(accent, 18 + (frameCount % 12));
+  return {
+    x: (width - w) / 2,
+    y: (height - h) / 2,
+    w,
+    h
+  };
 }
 
-function drawWhitePhoneMode(visual) {
+function projectLandmark(landmark) {
+  const rect = getVideoRect();
+  return {
+    x: width - (rect.x + landmark.x * rect.w),
+    y: rect.y + landmark.y * rect.h
+  };
+}
+
+function detectFace() {
+  if (!faceTrackerReady || !faceLandmarker || !video?.elt?.videoWidth) {
+    return;
+  }
+
+  const now = performance.now();
+  if (now - lastDetectionTime < 55) return;
+  if (video.elt.currentTime === lastVideoTime) return;
+
+  lastDetectionTime = now;
+  lastVideoTime = video.elt.currentTime;
+
+  try {
+    const result = faceLandmarker.detectForVideo(video.elt, now);
+    faceLandmarks = result.faceLandmarks?.[0] || null;
+    const nextLocked = Boolean(faceLandmarks?.length);
+
+    if (nextLocked !== faceLocked || now - lastFaceNotice > 500) {
+      faceLocked = nextLocked;
+      lastFaceNotice = now;
+      notifyParent({
+        type: "face:state",
+        locked: faceLocked
+      });
+    }
+  } catch (error) {
+    console.error("Face tracking error:", error);
+    faceLandmarks = null;
+    notifyParent({
+      type: "teachable:warning",
+      message: "Face tracking paused / retrying"
+    });
+  }
+}
+
+function drawSignalField() {
   noStroke();
-  fill(255, 255, 255, 148);
+  fill(0, faceLocked ? 58 : 104);
   rect(0, 0, width, height);
 
-  stroke(255, 255, 255, 205);
-  strokeWeight(frameCount % 10 < 3 ? 3 : 1);
-  for (let y = (frameCount * 3) % 9; y < height; y += 9) {
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 28);
+  strokeWeight(1);
+  for (let y = (frameCount * 2) % 8; y < height; y += 8) {
     line(0, y, width, y);
   }
 
   noFill();
-  stroke(255);
-  strokeWeight(3);
-  for (let i = 0; i < 3; i += 1) {
-    const pulse = (
-      108 +
-      sin((millis() - stateStarted) / 320 - i * 0.7) * 28 +
-      i * 54
-    );
-    rect(width / 2 - pulse / 2, height / 2 - pulse / 2, pulse, pulse);
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 18);
+  for (let x = 0; x < width; x += 48) {
+    line(x, 0, x, height);
   }
-
-  noStroke();
-  fill(255, 255, 255, 225);
-  rect(0, (frameCount * 9) % height, width, frameCount % 8 < 2 ? 10 : 3);
-
-  for (let i = 0; i < 9; i += 1) {
-    const x = (frameCount * (3 + i * 0.4) + i * 127) % width;
-    const y = (i * 71 + frameCount * 2) % height;
-    fill(255, 100 + (i % 3) * 45);
-    rect(x, y, random(30, 130), random(2, 8));
+  for (let y = 0; y < height; y += 48) {
+    line(0, y, width, y);
   }
-
-  blendMode(DIFFERENCE);
-  fill(255, frameCount % 18 < 2 ? 220 : 40);
-  rect(0, 0, width, height);
-  blendMode(BLEND);
-
-  drawCorner(visual.accent);
-  drawGlitchFrame(visual.accent, 12 + (frameCount % 8));
 }
 
-function drawNeutralMode(visual) {
-  noStroke();
-  fill(0, 0, 0, 126);
-  rect(0, 0, width, height);
+function drawMatrixFace(landmarks) {
+  const points = landmarks.map(projectLandmark);
+  const oval = FACE_OVAL.map((index) => points[index]).filter(Boolean);
+  if (oval.length < 4) return;
 
-  stroke(visual.accent[0], 80);
+  const facePath = new Path2D();
+  facePath.moveTo(oval[0].x, oval[0].y);
+  for (let index = 1; index < oval.length; index += 1) {
+    facePath.lineTo(oval[index].x, oval[index].y);
+  }
+  facePath.closePath();
+
+  const bounds = faceBounds(oval);
+  const ctx = drawingContext;
+
+  ctx.save();
+  ctx.clip(facePath);
+  ctx.fillStyle = "rgba(0, 17, 5, 0.38)";
+  ctx.fillRect(bounds.x, bounds.y, bounds.w, bounds.h);
+  drawCodeRain(ctx, bounds);
+  drawFaceScanlines(ctx, bounds);
+  ctx.restore();
+
+  drawFaceMesh(points);
+  drawFaceOutline(oval);
+
+  const scanY = bounds.y + ((millis() * 0.08) % bounds.h);
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 150);
   strokeWeight(1);
-  for (let x = 0; x < width; x += 32) {
-    for (let y = 0; y < height; y += 32) {
-      point(x, y);
+  line(bounds.x, scanY, bounds.x + bounds.w, scanY);
+
+  drawTargetCorners(bounds);
+}
+
+function faceBounds(points) {
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+
+  points.forEach((point) => {
+    minX = Math.min(minX, point.x);
+    minY = Math.min(minY, point.y);
+    maxX = Math.max(maxX, point.x);
+    maxY = Math.max(maxY, point.y);
+  });
+
+  return {
+    x: minX,
+    y: minY,
+    w: Math.max(1, maxX - minX),
+    h: Math.max(1, maxY - minY)
+  };
+}
+
+function drawCodeRain(ctx, bounds) {
+  const glyphSize = Math.max(8, Math.round(bounds.w / 24));
+  const gapX = Math.max(8, Math.round(glyphSize * 1.2));
+  const gapY = Math.max(10, Math.round(glyphSize * 1.45));
+  const tick = Math.floor(millis() / 85);
+
+  ctx.save();
+  ctx.font = `${glyphSize}px monospace`;
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+
+  for (let column = 0; column < Math.ceil(bounds.w / gapX); column += 1) {
+    const x = bounds.x + column * gapX;
+    const offset = (
+      (millis() * (0.025 + (column % 5) * 0.008) + column * 53) %
+      (bounds.h + gapY * 4)
+    );
+
+    for (let row = -4; row < Math.ceil(bounds.h / gapY) + 4; row += 1) {
+      const y = bounds.y + row * gapY + offset;
+      const glyphIndex = Math.abs(
+        (column * 17 + row * 31 + tick + ((column * row) % 11)) % GLYPHS.length
+      );
+      const hot = (column + row + tick) % 17 === 0;
+      const alpha = hot ? 235 : 90 + ((column * 13 + row * 29) % 110);
+
+      ctx.fillStyle = hot
+        ? `rgba(225, 255, 230, ${alpha / 255})`
+        : `rgba(84, 255, 112, ${alpha / 255})`;
+      ctx.shadowColor = "rgba(84,255,112,0.8)";
+      ctx.shadowBlur = hot ? 10 : 3;
+      ctx.fillText(GLYPHS[glyphIndex], x, y);
     }
   }
 
-  noFill();
-  stroke(255, 35);
-  strokeWeight(1);
-  const size = 90 + sin(frameCount * 0.04) * 12;
-  rect(width / 2 - size / 2, height / 2 - size / 2, size, size);
+  ctx.restore();
 }
 
-function drawGlitchFrame(accent, count) {
-  noFill();
-  strokeWeight(2);
+function drawFaceScanlines(ctx, bounds) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(120,255,150,0.28)";
+  ctx.lineWidth = 1;
+  const offset = (millis() * 0.07) % 7;
 
-  for (let i = 0; i < count; i += 1) {
-    const x = random(width);
-    const y = random(height);
-    const w = random(24, 190);
-    const h = random(2, 12);
-    stroke(
-      i % 2 === 0 ? accent[0] : 255,
-      i % 2 === 0 ? accent[1] : 255,
-      i % 2 === 0 ? accent[2] : 255,
-      random(80, 220)
-    );
-    rect(x, y, w, h);
+  for (let y = bounds.y + offset; y < bounds.y + bounds.h; y += 7) {
+    ctx.beginPath();
+    ctx.moveTo(bounds.x, y);
+    ctx.lineTo(bounds.x + bounds.w, y);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+function drawFaceMesh(points) {
+  noFill();
+  strokeWeight(1);
+
+  for (let index = 0; index < points.length; index += 7) {
+    const point = points[index];
+    if (!point) continue;
+
+    for (const offset of [1, 2, 7]) {
+      const target = points[index + offset];
+      if (!target) continue;
+      const distance = dist(point.x, point.y, target.x, target.y);
+      if (distance > 24) continue;
+      stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 35);
+      line(point.x, point.y, target.x, target.y);
+    }
+
+    noStroke();
+    fill(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 125);
+    rect(point.x - 1, point.y - 1, 2.5, 2.5);
+    noFill();
   }
 }
 
-function drawInterface(visual) {
+function drawFaceOutline(points) {
+  drawingContext.save();
+  drawingContext.strokeStyle = "rgba(84,255,112,0.95)";
+  drawingContext.lineWidth = 2;
+  drawingContext.shadowColor = "rgba(84,255,112,0.9)";
+  drawingContext.shadowBlur = 18;
+  drawingContext.beginPath();
+  drawingContext.moveTo(points[0].x, points[0].y);
+
+  for (let index = 1; index < points.length; index += 1) {
+    drawingContext.lineTo(points[index].x, points[index].y);
+  }
+
+  drawingContext.closePath();
+  drawingContext.stroke();
+  drawingContext.restore();
+}
+
+function drawTargetCorners(bounds) {
+  const size = Math.min(22, bounds.w * 0.12);
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 210);
+  strokeWeight(2);
+  line(bounds.x, bounds.y, bounds.x + size, bounds.y);
+  line(bounds.x, bounds.y, bounds.x, bounds.y + size);
+  line(bounds.x + bounds.w, bounds.y, bounds.x + bounds.w - size, bounds.y);
+  line(bounds.x + bounds.w, bounds.y, bounds.x + bounds.w, bounds.y + size);
+}
+
+function drawSearchMode() {
+  const centerX = width / 2;
+  const centerY = height / 2;
+  const size = 150 + sin((millis() - stateStarted) / 480) * 14;
+
+  noFill();
+  stroke(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 150);
+  strokeWeight(1);
+  rect(centerX - size / 2, centerY - size / 2, size, size);
+  line(centerX - size, centerY, centerX + size, centerY);
+  line(centerX, centerY - size, centerX, centerY + size);
+
+  noStroke();
+  fill(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 190);
+  textAlign(CENTER, CENTER);
+  textSize(10);
+  text(
+    faceTrackerReady ? "SEARCHING FACE" : "LOADING FACE MODEL",
+    centerX,
+    centerY + size / 2 + 24
+  );
+  textAlign(LEFT, BASELINE);
+}
+
+function drawInterface() {
   const accent = color(
-    visual.accent[0],
-    visual.accent[1],
-    visual.accent[2]
+    MATRIX_GREEN[0],
+    MATRIX_GREEN[1],
+    MATRIX_GREEN[2]
   );
 
   noStroke();
   fill(0, 220);
-  rect(24, height - 136, 352, 108);
+  rect(24, height - 124, 330, 96);
   stroke(accent);
   strokeWeight(1);
   noFill();
-  rect(24, height - 136, 352, 108);
+  rect(24, height - 124, 330, 96);
 
   noStroke();
   fill(accent);
   textSize(10);
   textAlign(LEFT, TOP);
-  text("OBJECT-CONTROLLED STATE", 40, height - 112);
+  text("BIO-INTERFACE / MATRIX FACE FIELD", 40, height - 100);
+  textSize(faceLocked ? 30 : 24);
+  text(faceLocked ? "FACE LOCKED" : "SCANNING", 40, height - 70);
 
-  textSize(visual.name.length > 11 ? 26 : 34);
-  text(visual.name, 40, height - 82);
-
+  fill(255, 175);
   textSize(9);
-  fill(255, 180);
-  text(`RAW ${rawLabel.toUpperCase()} / ${Math.round(confidence * 100)}%`, 40, height - 40);
-
-  drawConfidence(accent);
-  drawReticle(accent);
-  drawCorner(visual.accent);
+  text(
+    faceLocked ? "478 LANDMARKS / LIVE" : "AWAITING FACE",
+    40,
+    height - 40
+  );
 
   fill(255);
-  noStroke();
   textAlign(RIGHT, TOP);
   textSize(10);
-  text(visual.name, width - 24, 24);
+  text(faceLocked ? "SIGNAL ACQUIRED" : "NO SIGNAL", width - 24, 24);
   textSize(9);
-  fill(255, 180);
-  text("B / W / N TO TEST", width - 24, 42);
+  fill(255, 165);
+  text("CAMERA / NOT RECORDED", width - 24, 42);
   textAlign(LEFT, TOP);
-}
 
-function drawConfidence(accent) {
-  const x = width - 184;
-  const y = height - 44;
-  const w = 160;
-
-  noFill();
-  stroke(255, 100);
-  strokeWeight(1);
-  rect(x, y, w, 8);
-
-  noStroke();
-  fill(accent);
-  rect(x + 1, y + 1, (w - 2) * confidence, 6);
-}
-
-function drawReticle(accent) {
-  push();
-  translate(width / 2, height / 2);
-  noFill();
-  stroke(accent);
-  strokeWeight(1);
-  rect(-54, -54, 108, 108);
-  line(-78, 0, -62, 0);
-  line(62, 0, 78, 0);
-  line(0, -78, 0, -62);
-  line(0, 62, 0, 78);
-  pop();
+  drawCorner(accent);
 }
 
 function drawCorner(accent) {
-  const size = 22;
+  const size = 24;
   const pad = 12;
 
-  stroke(accent[0], accent[1], accent[2] || 255, 210);
+  stroke(accent);
   strokeWeight(2);
   noFill();
-
   line(pad, pad, pad + size, pad);
   line(pad, pad, pad, pad + size);
   line(width - pad, pad, width - pad - size, pad);
@@ -599,42 +486,6 @@ function drawCorner(accent) {
   line(pad, height - pad, pad, height - pad - size);
   line(width - pad, height - pad, width - pad - size, height - pad);
   line(width - pad, height - pad, width - pad, height - pad - size);
-}
-
-function keyPressed() {
-  const keyName = key.toLowerCase();
-
-  if (keyName === "b") {
-    setManualState("black phone");
-  } else if (keyName === "w") {
-    setManualState("white phone");
-  } else if (keyName === "n") {
-    setManualState("neutral");
-  }
-}
-
-function setManualState(label) {
-  const visual = visualState(label);
-  predictionHistory = [];
-  stableLabel = label;
-  confidence = 1;
-  rawLabel = label === "neutral" ? "Manual neutral" : label;
-  stateStarted = millis();
-  setStatus(`MANUAL TEST / ${visual.name}`);
-  notifyParent({
-    type: "teachable:state",
-    state: visual.mode === "idle" ? "neutral" : visual.mode,
-    label: visual.name,
-    confidence
-  });
-}
-
-function normalizeLabel(label) {
-  return String(label || "").trim().toLowerCase();
-}
-
-function visualState(label) {
-  return VISUALS[normalizeLabel(label)] || NEUTRAL_VISUAL;
 }
 
 function setStatus(message) {
@@ -652,12 +503,3 @@ function notifyParent(payload) {
     window.parent.postMessage(payload, window.location.origin);
   }
 }
-
-window.addEventListener("message", (event) => {
-  if (event.origin !== window.location.origin) return;
-  if (event.data?.type !== "teachable:set-state") return;
-
-  if (event.data.state === "black") setManualState("black phone");
-  if (event.data.state === "white") setManualState("white phone");
-  if (event.data.state === "neutral") setManualState("neutral");
-});

@@ -10,7 +10,6 @@
   const status = root.querySelector("[data-teachable-status]");
   const confidenceMeter = root.querySelector("[data-teachable-meter]");
   const labelNodes = root.querySelectorAll("[data-teachable-label]");
-  const testButtons = [...root.querySelectorAll("[data-teachable-test]")];
   const frameUrl = "playground-frame.html";
 
   let active = false;
@@ -44,15 +43,6 @@
     }
   }
 
-  function setActiveState(state) {
-    testButtons.forEach((button) => {
-      button.classList.toggle(
-        "is-active",
-        button.dataset.teachableTest === state
-      );
-    });
-  }
-
   function start() {
     if (active || document.body.classList.contains("editor-mode")) return;
 
@@ -63,11 +53,10 @@
     frame.hidden = false;
     setConsoleState("loading");
     setStatus("CONNECTING");
-    setMessage("Loading the original p5 visual system");
+    setMessage("Initializing Matrix face tracker");
     setStartLabel("Camera active");
     stopButton.hidden = false;
-    updateReadout("NEUTRAL", 0);
-    setActiveState("neutral");
+    updateReadout("SEARCHING", 0);
 
     window.clearTimeout(frameTimer);
     frameTimer = window.setTimeout(() => {
@@ -105,8 +94,7 @@
     setStartLabel("Start camera");
     startButton.disabled = false;
     stopButton.hidden = true;
-    updateReadout("NEUTRAL", 0);
-    setActiveState("");
+    updateReadout("SEARCHING", 0);
   }
 
   function showError(text) {
@@ -122,8 +110,7 @@
     setStartLabel("Try again");
     startButton.disabled = false;
     stopButton.hidden = true;
-    updateReadout("NEUTRAL", 0);
-    setActiveState("");
+    updateReadout("SEARCHING", 0);
   }
 
   window.addEventListener("message", (event) => {
@@ -139,17 +126,19 @@
     if (data.type === "teachable:model-ready") {
       modelReady = true;
       window.clearTimeout(frameTimer);
-      setStatus("LIVE");
-      setMessage("LIVE CLASSIFICATION / NOT RECORDED");
+      setStatus("SCANNING");
+      setMessage("FACE MODEL READY / SEARCHING FOR FACE");
     }
 
-    if (data.type === "teachable:state") {
-      const state = data.state || "neutral";
-      const label = data.label || state.toUpperCase();
-      const confidence = Number(data.confidence) || 0;
-      updateReadout(label, confidence);
-      setActiveState(state);
-      setStatus("LIVE");
+    if (data.type === "face:state") {
+      const locked = Boolean(data.locked);
+      updateReadout(locked ? "FACE LOCKED" : "SEARCHING", locked ? 1 : 0);
+      setStatus(locked ? "FACE LOCKED" : "SCANNING");
+      setMessage(
+        locked
+          ? "MATRIX BIO-INTERFACE ACTIVE / NOT RECORDED"
+          : "SEARCHING FOR FACE"
+      );
     }
 
     if (data.type === "teachable:error") {
@@ -164,19 +153,6 @@
 
   startButton?.addEventListener("click", start);
   stopButton?.addEventListener("click", stop);
-
-  testButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      if (!active || !modelReady) return;
-      frame.contentWindow?.postMessage(
-        {
-          type: "teachable:set-state",
-          state: button.dataset.teachableTest
-        },
-        window.location.origin
-      );
-    });
-  });
 
   window.addEventListener("pagehide", stop);
 })();

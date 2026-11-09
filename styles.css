@@ -1703,7 +1703,7 @@ body::before {
 
 .teachable-controls {
   display: grid;
-  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1fr) auto auto;
+  grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1fr) auto;
   align-items: stretch;
   min-height: 72px;
 }
@@ -1748,44 +1748,6 @@ body::before {
   width: 0;
   background: var(--acid);
   transition: width 90ms linear;
-}
-
-.teachable-test {
-  display: flex;
-  align-items: center;
-  gap: 0;
-  padding: 0 12px;
-  border-right: 1px solid var(--line);
-}
-
-.teachable-test button {
-  display: grid;
-  width: 38px;
-  height: 38px;
-  place-items: center;
-  border: 1px solid var(--line);
-  border-right: 0;
-  background: var(--ink);
-  color: var(--muted);
-  font-family: var(--font-mono);
-  font-size: 9px;
-  cursor: pointer;
-}
-
-.teachable-test button:last-child {
-  border-right: 1px solid var(--line);
-}
-
-.teachable-test button:hover,
-.teachable-test button.is-active {
-  border-color: var(--acid);
-  background: var(--acid);
-  color: var(--ink);
-}
-
-.teachable-console:not([data-state="active"]) .teachable-test button {
-  cursor: default;
-  opacity: 0.32;
 }
 
 .teachable-stop {
@@ -2748,16 +2710,6 @@ body::before {
     font-size: 58px;
   }
 
-  .teachable-controls {
-    grid-template-columns: minmax(140px, 0.8fr) minmax(180px, 1fr) auto;
-  }
-
-  .teachable-stop {
-    grid-column: 1 / -1;
-    min-height: 46px;
-    border-top: 1px solid var(--line);
-  }
-
   .writers-layout {
     grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
     gap: 24px;
@@ -3207,14 +3159,11 @@ body::before {
     border-right: 0;
   }
 
-  .teachable-test {
-    min-height: 52px;
-    justify-content: center;
-    border-right: 0;
-  }
-
   .teachable-stop {
+    grid-column: 1 / -1;
     min-width: 0;
+    min-height: 46px;
+    border-top: 1px solid var(--line);
   }
 
   .project-media {

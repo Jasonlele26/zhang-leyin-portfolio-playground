@@ -34,10 +34,10 @@ from the public site. The source folder remains editable locally.
 
 ## Interactive camera study
 
-The Playground section loads the Teachable Machine model only after the visitor
-chooses "Start camera". Model files are hosted under
-`assets/teachable/`, and camera access is enabled only for the portfolio's own
-origin in `_headers`.
+The Playground section loads a MediaPipe face landmark model only after the
+visitor chooses "Start camera". The face model, WebAssembly runtime and p5
+runtime are hosted under `assets/`, and camera access is enabled only for the
+portfolio's own origin in `_headers`.
 
 ## Public release checks
 

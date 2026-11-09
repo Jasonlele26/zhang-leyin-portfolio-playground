@@ -70,4 +70,10 @@ await cp(
   { recursive: true, force: true }
 );
 
+await cp(
+  path.join(root, "assets", "mediapipe"),
+  path.join(dist, "assets", "mediapipe"),
+  { recursive: true, force: true }
+);
+
 console.log(`Public site built at ${dist}`);
