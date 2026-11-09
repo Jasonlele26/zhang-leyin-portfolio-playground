@@ -2,6 +2,9 @@ const VISION_MODULE_URL = "assets/mediapipe/vision_bundle.mjs";
 const FACE_MODEL_URL = "assets/mediapipe/face_landmarker.task";
 const WASM_ROOT = "assets/mediapipe/wasm";
 const MATRIX_GREEN = [84, 255, 112];
+const MARATHON_YELLOW = [244, 255, 74];
+const MARATHON_CYAN = [55, 225, 255];
+const MARATHON_ORANGE = [255, 91, 38];
 const EFFECT_DELAY = 3000;
 const FACE_OVAL = [
   10, 338, 297, 332, 284, 251, 389, 356, 454, 323, 361, 288,
@@ -9,6 +12,14 @@ const FACE_OVAL = [
   172, 58, 132, 93, 234, 127, 162, 21, 54, 103, 67, 109
 ];
 const GLYPHS = "01{}[]<>/\\|+-=:_;XYZ01";
+const CALLSIGNS = [
+  "ECHO-7", "NULL SAINT", "REDLINE", "VANDAL", "ORACLE",
+  "DEAD LETTER", "KITE", "SABLE", "NOMAD-3", "GLASS JAW"
+];
+const ROLES = ["RUNNER", "COURIER", "GHOST", "SCOUT", "FREELANCER"];
+const ORIGINS = ["TAU CETI", "TORMENT", "ORBIT-6", "VOID DOCK", "UESC BLACK"];
+const STATUSES = ["CLEARED", "FLAGGED", "UNVERIFIED", "TRACKING", "LOCKED"];
+const THREATS = ["LOW", "GUARDED", "SEVERE", "UNKNOWN", "CRITICAL"];
 
 let video;
 let faceLandmarker;
@@ -25,6 +36,9 @@ let scanStartedAt = 0;
 let resultStartedAt = 0;
 let lastScanNotice = 0;
 let effectActive = false;
+let identity = null;
+let identityRefreshAt = 0;
+let perimeterSignals = [];
 
 function setup() {
   const canvas = createCanvas(960, 540);
@@ -32,6 +46,9 @@ function setup() {
   pixelDensity(1);
   textFont("monospace");
   stateStarted = millis();
+  identity = createIdentity();
+  identityRefreshAt = millis() + 12000;
+  perimeterSignals = createPerimeterSignals();
   notifyParent({ type: "teachable:frame-ready" });
 
   video = createCapture(
@@ -170,7 +187,14 @@ function draw() {
     return;
   }
 
+  if (millis() >= identityRefreshAt) {
+    identity = createIdentity();
+    perimeterSignals = createPerimeterSignals();
+    identityRefreshAt = millis() + 12000;
+  }
+
   drawSignalField();
+  drawMarathonOutside(getScanBounds());
   drawResultBurst(now);
 
   if (faceLandmarks && faceLandmarks.length) {
@@ -247,6 +271,198 @@ function getScanBounds() {
     w: width * 0.36,
     h: height * 0.68
   };
+}
+
+function randomItem(items) {
+  return items[floor(random(items.length))];
+}
+
+function createIdentity() {
+  return {
+    code: `UESC-${floor(random(100, 999))}-${floor(random(1000, 9999))}`,
+    callsign: randomItem(CALLSIGNS),
+    role: randomItem(ROLES),
+    origin: randomItem(ORIGINS),
+    status: randomItem(STATUSES),
+    threat: randomItem(THREATS),
+    clearance: `${floor(random(1, 6))}/${floor(random(10, 99))}`,
+    cycle: `${floor(random(100, 999))}.${floor(random(10, 99))}`,
+    integrity: `${floor(random(62, 99))}%`
+  };
+}
+
+function createPerimeterSignals() {
+  const labels = [
+    "TRACE", "PACKET", "BIOSIG", "UESC", "CIPHER",
+    "NULL", "ORBIT", "STATIC", "RUNNER", "LOCK"
+  ];
+
+  return Array.from({ length: 12 }, (_, index) => ({
+    side: index % 2 === 0 ? "left" : "right",
+    y: random(0.12, 0.9),
+    width: random(44, 112),
+    label: `${randomItem(labels)} ${floor(random(10, 99))}`,
+    color: floor(random(3))
+  }));
+}
+
+function drawMarathonOutside(bounds) {
+  drawMarathonFrame();
+
+  const gap = 18;
+  const panelWidth = min(190, max(142, bounds.x - gap * 2));
+  const leftX = gap;
+  const leftY = 92;
+  const rightX = max(
+    bounds.x + bounds.w + gap,
+    width - panelWidth - gap
+  );
+  const rightY = 92;
+
+  drawIdentityPanel(
+    leftX,
+    leftY,
+    panelWidth,
+    "UESC / BIOMETRIC NODE",
+    [
+      `ID       ${identity.code}`,
+      `SUBJECT  ${identity.callsign}`,
+      `CLASS    ${identity.role}`,
+      `ORIGIN   ${identity.origin}`
+    ],
+    MARATHON_YELLOW
+  );
+
+  drawIdentityPanel(
+    rightX,
+    rightY,
+    panelWidth,
+    "EXTRACTION / LIVE FEED",
+    [
+      `STATUS   ${identity.status}`,
+      `THREAT   ${identity.threat}`,
+      `CLEAR    ${identity.clearance}`,
+      `CYCLE    ${identity.cycle}`
+    ],
+    MARATHON_CYAN
+  );
+
+  drawPerimeterSignals(bounds);
+
+  noStroke();
+  fill(MARATHON_YELLOW[0], MARATHON_YELLOW[1], MARATHON_YELLOW[2], 220);
+  textSize(9);
+  textAlign(RIGHT, BOTTOM);
+  text(
+    `INTEGRITY ${identity.integrity} // SIGNAL ${floor(random(70, 99))}`,
+    width - 20,
+    height - 132
+  );
+  textAlign(LEFT, BASELINE);
+}
+
+function drawMarathonFrame() {
+  noFill();
+  stroke(
+    MARATHON_YELLOW[0],
+    MARATHON_YELLOW[1],
+    MARATHON_YELLOW[2],
+    145
+  );
+  strokeWeight(1);
+  rect(8, 8, width - 16, height - 16);
+
+  stroke(
+    MARATHON_CYAN[0],
+    MARATHON_CYAN[1],
+    MARATHON_CYAN[2],
+    70
+  );
+  rect(13, 13, width - 26, height - 26);
+
+  drawHazardBand(8, 8, 150, 5, MARATHON_ORANGE);
+  drawHazardBand(width - 158, height - 13, 150, 5, MARATHON_CYAN);
+
+  noStroke();
+  fill(MARATHON_YELLOW[0], MARATHON_YELLOW[1], MARATHON_YELLOW[2], 210);
+  textSize(8);
+  textAlign(LEFT, TOP);
+  text("EXTRACTION FEED // UESC", 20, 64);
+}
+
+function drawHazardBand(x, y, bandWidth, bandHeight, color) {
+  push();
+  noFill();
+  stroke(color[0], color[1], color[2], 210);
+  strokeWeight(1);
+
+  for (let offset = -bandHeight; offset < bandWidth; offset += 8) {
+    line(x + offset, y, x + offset + bandHeight, y + bandHeight);
+  }
+  pop();
+}
+
+function drawIdentityPanel(x, y, panelWidth, title, lines, accent) {
+  noStroke();
+  fill(0, 186);
+  rect(x, y, panelWidth, 118);
+  stroke(accent[0], accent[1], accent[2], 190);
+  strokeWeight(1);
+  noFill();
+  rect(x, y, panelWidth, 118);
+
+  noStroke();
+  fill(accent[0], accent[1], accent[2], 230);
+  textSize(8);
+  textAlign(LEFT, TOP);
+  text(title, x + 10, y + 9);
+
+  fill(255, 210);
+  textSize(7);
+  lines.forEach((line, index) => {
+    text(line, x + 10, y + 29 + index * 19);
+  });
+}
+
+function drawPerimeterSignals(bounds) {
+  perimeterSignals.forEach((signal, index) => {
+    const x = signal.side === "left"
+      ? 20
+      : width - signal.width - 20;
+    const y = signal.y * height;
+
+    if (
+      x + signal.width > bounds.x - 12 &&
+      x < bounds.x + bounds.w + 12 &&
+      y > bounds.y - 12 &&
+      y < bounds.y + bounds.h + 12
+    ) {
+      return;
+    }
+
+    const accent = signal.color === 0
+      ? MARATHON_YELLOW
+      : signal.color === 1
+        ? MARATHON_CYAN
+        : MARATHON_ORANGE;
+    const pulse = (frameCount + index * 23) % 90 < 75;
+    if (!pulse) return;
+
+    noStroke();
+    fill(accent[0], accent[1], accent[2], 185);
+    rect(x, y, signal.width, 4);
+    fill(0, 175);
+    rect(x, y + 5, signal.width, 15);
+    stroke(accent[0], accent[1], accent[2], 150);
+    noFill();
+    rect(x, y, signal.width, 20);
+
+    noStroke();
+    fill(255, 210);
+    textSize(7);
+    textAlign(LEFT, TOP);
+    text(signal.label, x + 4, y + 7);
+  });
 }
 
 function drawScanCorners(bounds) {
