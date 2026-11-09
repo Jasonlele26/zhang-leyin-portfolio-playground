@@ -70,7 +70,9 @@ async function loadFaceTrackerWithRetry() {
   setStatus("LOADING FACE MODEL");
 
   try {
-    const vision = await import(VISION_MODULE_URL);
+    const vision = await import(
+      new URL(VISION_MODULE_URL, window.location.href).href
+    );
     const fileset = await vision.FilesetResolver.forVisionTasks(WASM_ROOT);
     const options = {
       baseOptions: {
