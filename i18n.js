@@ -326,13 +326,7 @@
   }
 
   function readStoredLanguage() {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored === "zh" || stored === "en") return stored;
-    } catch {
-      // Storage may be unavailable in privacy-restricted contexts.
-    }
-    return "en";
+    return "zh";
   }
 
   function persistLanguage() {
