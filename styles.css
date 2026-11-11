@@ -56,9 +56,9 @@
   --alert: #f24723;
   --nav-height: 60px;
   --page-pad: clamp(16px, 2.5vw, 42px);
-  --font-display: "Archivo Black", Impact, "Arial Black", sans-serif;
-  --font-body: "Barlow", "Segoe UI", Arial, sans-serif;
-  --font-mono: "IBM Plex Mono", "Cascadia Mono", Consolas, monospace;
+  --font-display: "Archivo Black", "Microsoft YaHei", "PingFang SC", Impact, "Arial Black", sans-serif;
+  --font-body: "Barlow", "Microsoft YaHei", "PingFang SC", "Segoe UI", Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "Microsoft YaHei", "PingFang SC", "Cascadia Mono", Consolas, monospace;
 }
 
 *,
@@ -307,6 +307,28 @@ body::before {
   stroke-linejoin: miter;
 }
 
+.language-toggle {
+  display: grid;
+  width: 76px;
+  height: var(--nav-height);
+  flex: 0 0 76px;
+  place-items: center;
+  border-left: 1px solid var(--line);
+  background: var(--ink);
+  color: var(--acid);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background-color 140ms ease, color 140ms ease;
+}
+
+.language-toggle:hover {
+  background: var(--white);
+  color: var(--ink);
+}
+
 .menu-toggle {
   position: relative;
   display: none;
@@ -544,6 +566,14 @@ body::before {
   font-size: 0.8392857em;
   color: var(--white);
   -webkit-text-stroke: 1px var(--acid);
+}
+
+html[lang="zh-CN"] .hero h1 .hero-word-main {
+  transform: none;
+}
+
+html[lang="zh-CN"] .hero h1 {
+  line-height: 0.9;
 }
 
 .hero-reticle {
@@ -2747,6 +2777,10 @@ body::before {
     display: block;
   }
 
+  .language-toggle {
+    margin-left: auto;
+  }
+
   .hero {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(390px, 1fr) auto;
@@ -2962,6 +2996,12 @@ body::before {
 
   .brand-square {
     font-size: 17px;
+  }
+
+  .language-toggle {
+    width: var(--nav-height);
+    flex-basis: var(--nav-height);
+    font-size: 9px;
   }
 
   .hero {

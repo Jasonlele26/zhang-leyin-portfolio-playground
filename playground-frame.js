@@ -20,6 +20,9 @@ const ROLES = ["RUNNER", "COURIER", "GHOST", "SCOUT", "FREELANCER"];
 const ORIGINS = ["TAU CETI", "TORMENT", "ORBIT-6", "VOID DOCK", "UESC BLACK"];
 const STATUSES = ["CLEARED", "FLAGGED", "UNVERIFIED", "TRACKING", "LOCKED"];
 const THREATS = ["LOW", "GUARDED", "SEVERE", "UNKNOWN", "CRITICAL"];
+let uiLanguage = new URLSearchParams(window.location.search).get("lang") === "zh"
+  ? "zh"
+  : "en";
 
 let video;
 let faceLandmarker;
@@ -39,6 +42,10 @@ let effectActive = false;
 let identity = null;
 let identityRefreshAt = 0;
 let perimeterSignals = [];
+
+function t(english, chinese) {
+  return uiLanguage === "zh" ? chinese : english;
+}
 
 function setup() {
   const canvas = createCanvas(960, 540);
@@ -253,9 +260,17 @@ function drawScanField() {
   fill(MATRIX_GREEN[0], MATRIX_GREEN[1], MATRIX_GREEN[2], 190);
   textSize(9);
   textAlign(LEFT, BOTTOM);
-  text(`${Math.round(progress * 100)}% / DEPTH ${(progress * 4.8).toFixed(2)}M`, bounds.x, bounds.y - 9);
+  text(
+    `${Math.round(progress * 100)}% / ${t("DEPTH", "深度")} ${(progress * 4.8).toFixed(2)}M`,
+    bounds.x,
+    bounds.y - 9
+  );
   textAlign(RIGHT, BOTTOM);
-  text(faceLocked ? "FACE DETECTED" : "SEARCHING", bounds.x + bounds.w, bounds.y - 9);
+  text(
+    faceLocked ? t("FACE DETECTED", "已检测到人脸") : t("SEARCHING", "搜索中"),
+    bounds.x + bounds.w,
+    bounds.y - 9
+  );
   textAlign(LEFT, TOP);
 }
 
@@ -851,7 +866,9 @@ function drawSearchMode() {
   textAlign(CENTER, CENTER);
   textSize(10);
   text(
-    faceTrackerReady ? "SEARCHING FACE" : "LOADING FACE MODEL",
+    faceTrackerReady
+      ? t("SEARCHING FACE", "正在搜索人脸")
+      : t("LOADING FACE MODEL", "正在加载人脸模型"),
     centerX,
     centerY + size / 2 + 24
   );
@@ -881,14 +898,18 @@ function drawInterface() {
   fill(accent);
   textSize(10);
   textAlign(LEFT, TOP);
-  text("BIO-INTERFACE / MATRIX FACE FIELD", 40, height - 100);
+  text(
+    t("BIO-INTERFACE / MATRIX FACE FIELD", "生物界面 / MATRIX 面部场"),
+    40,
+    height - 100
+  );
   textSize(effectActive && faceLocked ? 30 : 24);
   text(
     effectActive
       ? faceLocked
-        ? "FACE LOCKED"
-        : "SCANNING"
-      : `SCANNING ${Math.round(progress * 100)}%`,
+        ? t("FACE LOCKED", "人脸已锁定")
+        : t("SCANNING", "扫描中")
+      : `${t("SCANNING", "扫描中")} ${Math.round(progress * 100)}%`,
     40,
     height - 70
   );
@@ -898,11 +919,11 @@ function drawInterface() {
   text(
     effectActive
       ? faceLocked
-        ? "478 LANDMARKS / LIVE"
-        : "AWAITING FACE"
+        ? t("478 LANDMARKS / LIVE", "478 个关键点 / 实时")
+        : t("AWAITING FACE", "等待人脸")
       : faceLocked
-        ? "FACE DETECTED / MAPPING FEATURES"
-        : "SEARCHING FACE / BUILDING TOPOLOGY",
+        ? t("FACE DETECTED / MAPPING FEATURES", "检测到人脸 / 映射特征")
+        : t("SEARCHING FACE / BUILDING TOPOLOGY", "搜索人脸 / 构建拓扑"),
     40,
     height - 40
   );
@@ -913,17 +934,17 @@ function drawInterface() {
   text(
     effectActive
       ? resultAge < 650
-        ? "RESULT READY"
+        ? t("RESULT READY", "结果已生成")
         : faceLocked
-          ? "SIGNAL ACQUIRED"
-          : "NO SIGNAL"
-      : "SCAN IN PROGRESS",
+          ? t("SIGNAL ACQUIRED", "信号已捕获")
+          : t("NO SIGNAL", "无信号")
+      : t("SCAN IN PROGRESS", "扫描进行中"),
     width - 24,
     24
   );
   textSize(9);
   fill(255, 165);
-  text("CAMERA / NOT RECORDED", width - 24, 42);
+  text(t("CAMERA / NOT RECORDED", "摄像头 / 不录制"), width - 24, 42);
   textAlign(LEFT, TOP);
 
   drawCorner(accent);
@@ -955,6 +976,12 @@ function friendlyError(error) {
   const message = error && error.message ? error.message : String(error);
   return message.length > 54 ? `${message.slice(0, 51)}...` : message;
 }
+
+window.addEventListener("message", (event) => {
+  if (event.origin !== window.location.origin) return;
+  if (event.data?.type !== "language:set") return;
+  uiLanguage = event.data.language === "zh" ? "zh" : "en";
+});
 
 function notifyParent(payload) {
   if (window.parent !== window) {

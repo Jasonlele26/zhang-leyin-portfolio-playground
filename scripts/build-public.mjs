@@ -10,6 +10,7 @@ await mkdir(dist, { recursive: true });
 
 const publicFiles = [
   "app.js",
+  "i18n.js",
   "interactive.js",
   "playground-frame.html",
   "playground-frame.css",
